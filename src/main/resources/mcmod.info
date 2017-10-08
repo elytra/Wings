@@ -1,0 +1,16 @@
+[
+{
+  "modid": "wings",
+  "name": "Wings",
+  "description": "Fun and probably overpowered elytra alternatives.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "https://unascribed.com",
+  "updateJSON": "",
+  "authorList": ["Una Thompson (unascribed)"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
