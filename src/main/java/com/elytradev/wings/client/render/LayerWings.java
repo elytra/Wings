@@ -1,11 +1,10 @@
-package com.elytradev.wings;
+package com.elytradev.wings.client.render;
 
 import java.util.List;
 
 import org.lwjgl.opengl.GL11;
 
-import com.google.common.collect.Lists;
-
+import com.elytradev.wings.item.ItemWings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BannerTextures;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -23,6 +22,7 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.BannerPattern;
+import net.minecraft.tileentity.TileEntityBanner;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -32,6 +32,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class LayerWings implements LayerRenderer<EntityLivingBase> {
 	protected final RenderLivingBase<?> renderPlayer;
+	
+	private static TileEntityBanner bannerDummy = new TileEntityBanner();
 
 	public LayerWings(RenderLivingBase<?> renderPlayer) {
 		this.renderPlayer = renderPlayer;
@@ -44,8 +46,6 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 		ItemStack is = elb .getItemStackFromSlot(EntityEquipmentSlot.CHEST);
 
 		if (is.getItem() instanceof ItemWings) {
-			ItemWings wings = (ItemWings)is.getItem();
-			
 			GlStateManager.color(1, 1, 1);
 			GlStateManager.enableBlend();
 			GlStateManager.blendFunc(SourceFactor.ONE, DestFactor.ZERO);
@@ -60,12 +60,6 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 				GlStateManager.translate(0, 0, (2/16f));
 			}
 
-			Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-			
-			String base = wings.getBaseMaterial();
-			
-			renderCube(0, 0, 0, 4, 12, wings.hasBooster() ? 4 : 2, Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite(base), true, true, true, 0f);
-
 			Vec3d forward = elb.getForward();
 			forward = forward.subtract(0, forward.y, 0).normalize();
 			Vec3d motion = new Vec3d(elb.motionX, 0, elb.motionZ).normalize();
@@ -76,21 +70,7 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 			
 			float rot = 15f+(float)(speed*180f);
 			
-			GlStateManager.translate((2/16f), 0f, ((wings.hasBooster() ? 2 : 1)/16f));
-			
-			GlStateManager.pushMatrix();
-			GlStateManager.translate((2/16f), 0, 0);
-			GlStateManager.rotate(-rot, 0, 1, 0);
-			GlStateManager.translate((0/16f), 0, 0);
-			renderWing(0, 0, 0, 10, 20, "ghshgdhgdhg", Lists.newArrayList(BannerPattern.BASE, BannerPattern.FLOWER), Lists.newArrayList(EnumDyeColor.BLACK, EnumDyeColor.YELLOW), 2);
-			GlStateManager.popMatrix();
-			
-			GlStateManager.pushMatrix();
-			GlStateManager.translate(-(2/16f), 0, 0);
-			GlStateManager.rotate(rot, 0, 1, 0);
-			GlStateManager.translate(-(10/16f), 0, 0);
-			renderWing(0, 0, 0, 10, 20, "dsfgfdgfgdf", Lists.newArrayList(BannerPattern.BASE, BannerPattern.BRICKS), Lists.newArrayList(EnumDyeColor.WHITE, EnumDyeColor.RED), -2);
-			GlStateManager.popMatrix();
+			drawWings(is, rot);
 
 			GlStateManager.disableBlend();
 			GlStateManager.popMatrix();
@@ -102,7 +82,52 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 		return false;
 	}
 	
-	private void renderWing(int x, int y, int z, float w, float h, String patternResLoc, List<BannerPattern> patternList, List<EnumDyeColor> colorList, float skew) {
+	public static void drawWings(ItemStack stack, float rot) {
+		if (stack.getItem() instanceof ItemWings) {
+			ItemWings wings = (ItemWings)stack.getItem();
+			
+			ItemStack leftWing = stack.copy();
+			ItemStack rightWing = stack.copy();
+			if (stack.hasTagCompound()) {
+				if (stack.getTagCompound().hasKey("LeftWing")) {
+					leftWing.getTagCompound().removeTag("LeftWing");
+					leftWing.getTagCompound().setTag("BlockEntityTag", stack.getTagCompound().getTag("LeftWing"));
+				}
+				if (stack.getTagCompound().hasKey("RightWing")) {
+					rightWing.getTagCompound().removeTag("RightWing");
+					rightWing.getTagCompound().setTag("BlockEntityTag", stack.getTagCompound().getTag("RightWing"));
+				}
+			}
+			
+			Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+			
+			String base = wings.getBaseMaterial();
+			renderCube(0, 0, 0, 4, 12, wings.hasThruster() ? 4 : 2, Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite(base), true, true, true, 0f);
+			
+			GlStateManager.translate((2/16f), 0f, ((wings.hasThruster() ? 2 : 1)/16f));
+			
+			bannerDummy.setItemValues(leftWing, true);
+			
+			GlStateManager.pushMatrix();
+			GlStateManager.translate((2/16f), 0, 0);
+			GlStateManager.rotate(-rot, 0, 1, 0);
+			GlStateManager.translate((0/16f), 0, 0);
+			renderWing(0, 0, 0, 10, 20, bannerDummy.getPatternResourceLocation(), bannerDummy.getPatternList(), bannerDummy.getColorList(), 2);
+			GlStateManager.popMatrix();
+			
+			
+			bannerDummy.setItemValues(rightWing, true);
+			
+			GlStateManager.pushMatrix();
+			GlStateManager.translate(-(2/16f), 0, 0);
+			GlStateManager.rotate(rot, 0, 1, 0);
+			GlStateManager.translate(-(10/16f), 0, 0);
+			renderWing(0, 0, 0, 10, 20, bannerDummy.getPatternResourceLocation(), bannerDummy.getPatternList(), bannerDummy.getColorList(), -2);
+			GlStateManager.popMatrix();
+		}
+	}
+	
+	private static void renderWing(int x, int y, int z, float w, float h, String patternResLoc, List<BannerPattern> patternList, List<EnumDyeColor> colorList, float skew) {
 		ResourceLocation tex = BannerTextures.BANNER_DESIGNS.getResourceLocation(patternResLoc, patternList, colorList);
 		Minecraft.getMinecraft().getTextureManager().bindTexture(tex);
 		
@@ -135,10 +160,10 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 		}
 		
 		vb.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_NORMAL);
-		vb.pos((x+0)*s, (y+h+sk2)*s, (z)*s).tex(minU, maxV).normal(0, 0, -1).endVertex();
-		vb.pos((x+w)*s, (y+h+sk1)*s, (z)*s).tex(maxU, maxV).normal(0, 0, -1).endVertex();
-		vb.pos((x+w)*s, (y+0+sk1)*s, (z)*s).tex(maxU, minV).normal(0, 0, -1).endVertex();
-		vb.pos((x+0)*s, (y+0+sk2)*s, (z)*s).tex(minU, minV).normal(0, 0, -1).endVertex();
+		vb.pos((x+0)*s, (y+h+sk2)*s, (z-0.01)*s).tex(minU, maxV).normal(0, 0, -1).endVertex();
+		vb.pos((x+w)*s, (y+h+sk1)*s, (z-0.01)*s).tex(maxU, maxV).normal(0, 0, -1).endVertex();
+		vb.pos((x+w)*s, (y+0+sk1)*s, (z-0.01)*s).tex(maxU, minV).normal(0, 0, -1).endVertex();
+		vb.pos((x+0)*s, (y+0+sk2)*s, (z-0.01)*s).tex(minU, minV).normal(0, 0, -1).endVertex();
 		
 		vb.pos((x+w)*s, (y+h+sk1)*s, (z)*s).tex(maxU, maxV).normal(0, 0, 1).endVertex();
 		vb.pos((x+0)*s, (y+h+sk2)*s, (z)*s).tex(minU, maxV).normal(0, 0, 1).endVertex();
@@ -148,7 +173,7 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 		tess.draw();
 	}
 	
-	private void renderCube(int x, int y, int z, float w, float h, float d, TextureAtlasSprite tas, boolean renderTop, boolean renderBottom, boolean renderSides, float skew) {
+	private static void renderCube(int x, int y, int z, float w, float h, float d, TextureAtlasSprite tas, boolean renderTop, boolean renderBottom, boolean renderSides, float skew) {
 		Tessellator tess = Tessellator.getInstance();
 		BufferBuilder vb = tess.getBuffer();
 		

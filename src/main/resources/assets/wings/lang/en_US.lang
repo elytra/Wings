@@ -3,10 +3,17 @@ item.wings.leather_elytra.name=Flappy Wings
 item.wings.metal_elytra.name=Clanky Wings
 item.wings.metal_jet_elytra.name=Zoomy Wings
 
+fluid.wings.jetfuel=Jet Fuel
+
+container.wings.converter=Fuel Converter
+tile.wings.converter.name=Fuel Converter
+
 attribute.name.wings:generic.flightSpeed=Flight Speed
 
 
 key.categories.wings=Wings
+key.categories.wings.inFlightMode=Wings (Flight Mode)
+key.categories.wings.inFlightMode.movement=Wings (Flight Mode Movement)
 
 key.wings.toggleFlightMode=Toggle Flight Mode
 
@@ -20,3 +27,9 @@ key.wings.throttleUp=Throttle Up
 key.wings.throttleDown=Throttle Down
 
 key.wings.brake=Brake
+
+key.wings.pitchUp=Pitch Up
+key.wings.pitchDown=Pitch Down
+
+key.wings.turnLeft=Turn Left
+key.wings.turnRight=Turn Right

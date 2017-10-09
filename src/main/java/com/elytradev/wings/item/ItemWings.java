@@ -1,7 +1,9 @@
-package com.elytradev.wings;
+package com.elytradev.wings.item;
 
 import java.util.UUID;
 
+import com.elytradev.wings.Wings;
+import com.elytradev.wings.client.render.DummyModel;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -21,7 +23,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class ItemWings extends ItemArmor {
+public abstract class ItemWings extends ItemArmor {
 
 	public static final UUID FLIGHT_SPEED_UUID = UUID.fromString("216a152b-0fc1-4481-bc79-720b15c6a0f5");
 	
@@ -74,7 +76,7 @@ public class ItemWings extends ItemArmor {
 		return "missingno";
 	}
 	
-	public boolean hasBooster() {
+	public boolean hasThruster() {
 		return false;
 	}
 	

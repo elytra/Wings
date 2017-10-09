@@ -1,4 +1,4 @@
-package com.elytradev.wings;
+package com.elytradev.wings.item;
 
 public class ItemLeatherElytra extends ItemWings {
 

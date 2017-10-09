@@ -1,4 +1,4 @@
-package com.elytradev.wings;
+package com.elytradev.wings.client.key;
 
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.settings.IKeyConflictContext;

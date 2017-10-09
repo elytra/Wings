@@ -1,4 +1,4 @@
-package com.elytradev.wings;
+package com.elytradev.wings.client.key;
 
 import com.elytradev.concrete.reflect.accessor.Accessor;
 import com.elytradev.concrete.reflect.accessor.Accessors;

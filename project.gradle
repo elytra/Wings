@@ -35,6 +35,7 @@ repositories {
 
 dependencies {
 	compile 'mezz.jei:jei_1.12:4.7.2.76'
+	compile 'com.elytradev:probedataproviderapi:MC1.12_ver1.1.1'
 }
 
 jar {

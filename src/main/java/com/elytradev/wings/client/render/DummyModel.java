@@ -1,4 +1,4 @@
-package com.elytradev.wings;
+package com.elytradev.wings.client.render;
 
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.entity.Entity;
