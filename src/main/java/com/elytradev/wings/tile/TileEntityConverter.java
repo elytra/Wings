@@ -1,7 +1,5 @@
 package com.elytradev.wings.tile;
 
-import com.elytradev.concrete.inventory.ConcreteFluidTank;
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
@@ -14,6 +12,7 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
@@ -24,12 +23,12 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 
 	public ItemStack inputItem = ItemStack.EMPTY;
 	
-	public ConcreteFluidTank inputTank;
-	public ConcreteFluidTank outputTank;
+	public FluidTank inputTank;
+	public FluidTank outputTank;
 	
 	public TileEntityConverter() {
-		inputTank = new ConcreteFluidTank(16000);
-		outputTank = new ConcreteFluidTank(16000);
+		inputTank = new FluidTank(16000);
+		outputTank = new FluidTank(16000);
 	}
 	
 	@Override
