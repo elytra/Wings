@@ -4,3 +4,19 @@ item.wings.metal_elytra.name=Clanky Wings
 item.wings.metal_jet_elytra.name=Zoomy Wings
 
 attribute.name.wings:generic.flightSpeed=Flight Speed
+
+
+key.categories.wings=Wings
+
+key.wings.toggleFlightMode=Toggle Flight Mode
+
+key.wings.rollCCW=Roll Counter-Clockwise
+key.wings.rollCW=Roll Clockwise
+
+key.wings.toggleThruster=Toggle Thruster
+key.wings.afterburner=Afterburner
+
+key.wings.throttleUp=Throttle Up
+key.wings.throttleDown=Throttle Down
+
+key.wings.brake=Brake

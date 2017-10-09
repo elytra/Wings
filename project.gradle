@@ -36,4 +36,12 @@ repositories {
 dependencies {
 	compile 'mezz.jei:jei_1.12:4.7.2.76'
 }
+
+jar {
+	manifest {
+		attributes (
+			'FMLAT': 'wings_at.cfg'
+		)
+	}
+}
 }
