@@ -8,6 +8,7 @@ import com.google.common.base.Predicates;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -31,8 +32,9 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import net.minecraftforge.items.wrapper.SidedInvWrapper;
 
-public class TileEntityConverter extends TileEntity implements IInventory, IFluidHandler, ITickable {
+public class TileEntityConverter extends TileEntity implements IInventory, IFluidHandler, ITickable, ISidedInventory {
 	
 	public static final int OPERATION_TIME = 80;
 	
@@ -314,6 +316,27 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 		outputItem = ItemStack.EMPTY;
 		markDirty();
 	}
+	
+	@Override
+	public boolean canExtractItem(int index, ItemStack stack, EnumFacing direction) {
+		return index == 1 && direction == EnumFacing.DOWN;
+	}
+	
+	@Override
+	public boolean canInsertItem(int index, ItemStack itemStackIn, EnumFacing direction) {
+		return index == 0 && direction == EnumFacing.UP;
+	}
+	
+	@Override
+	public int[] getSlotsForFace(EnumFacing side) {
+		if (side == EnumFacing.UP) {
+			return new int[] { 0 };
+		}
+		if (side == EnumFacing.DOWN) {
+			return new int[] { 1 };
+		}
+		return new int[0];
+	}
 
 	@Override
 	public IFluidTankProperties[] getTankProperties() {
@@ -359,7 +382,8 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 	@Override
 	public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
 		if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
-			return (T)new InvWrapper(this);
+			if (facing == null) return (T)new InvWrapper(this);
+			return (T)new SidedInvWrapper(this, facing);
 		} else if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
 			return (T)this;
 		}

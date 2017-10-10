@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.elytradev.wings.ConverterRecipes;
 import com.elytradev.wings.Wings;
+import com.elytradev.wings.client.gui.GuiConverter;
 import com.google.common.collect.Lists;
 
 import mezz.jei.api.IModPlugin;
@@ -39,6 +40,8 @@ public class WingsJEIPlugin implements IModPlugin {
 			recipes.add(new FuelConverterRecipeWrapper(en.getKey(), en.getValue()));
 		}
 		registry.addRecipes(recipes, "wings.fuelConverter");
+		
+		registry.addRecipeClickArea(GuiConverter.class, 59, 34, 59, 13, "wings.fuelConverter");
 	}
 	
 }

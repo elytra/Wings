@@ -33,6 +33,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.oredict.OreDictionary;
 
 @Mod(modid=Wings.MODID, name=Wings.NAME, version=Wings.VERSION)
 public class Wings {
@@ -75,6 +76,11 @@ public class Wings {
 		
 		NetworkRegistry.INSTANCE.registerGuiHandler(this, new WingsGuiHandler());
 		
+		OreDictionary.registerOre("coal", new ItemStack(Items.COAL, 1, 0));
+		OreDictionary.registerOre("charcoal", new ItemStack(Items.COAL, 1, 1));
+		
+		OreDictionary.registerOre("blockCoal", Blocks.COAL_BLOCK);
+		
 		proxy.preInit();
 	}
 	
@@ -84,7 +90,7 @@ public class Wings {
 		ConverterRecipes.registerFluid("oil", 500);
 		ConverterRecipes.registerFluid("fuel", 750);
 		ConverterRecipes.registerFluid("gasoline", 750);
-		ConverterRecipes.registerFluid("pyrotheum", 650);
+		ConverterRecipes.registerFluid("pyrotheum", 640);
 		ConverterRecipes.registerFluid("crude_oil", 350);
 		ConverterRecipes.registerFluid("tree_oil", 250);
 		ConverterRecipes.registerFluid("creosote", 100);
@@ -99,15 +105,14 @@ public class Wings {
 		ConverterRecipes.registerFluid("soylent", 5);
 		
 		
-		ConverterRecipes.registerItem(Items.COAL, 12);
-		ConverterRecipes.registerItem(Blocks.COAL_BLOCK, 120);
-		
-		
 		ConverterRecipes.registerItem("coal", 12);
-		ConverterRecipes.registerItem("charcoal", 12);
+		ConverterRecipes.registerItem("blockCoal", 120);
+		ConverterRecipes.registerItem("charcoal", 10);
+		ConverterRecipes.registerItem("blockCharcoal", 100);
 		ConverterRecipes.registerItem("fuelCoke", 32);
 		ConverterRecipes.registerItem("plankWood", 2);
 		ConverterRecipes.registerItem("logWood", 10);
+		ConverterRecipes.registerItem("dustPyrotheum", 160);
 	}
 	
 	@EventHandler

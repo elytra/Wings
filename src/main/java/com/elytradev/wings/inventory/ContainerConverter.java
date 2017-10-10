@@ -1,6 +1,8 @@
 package com.elytradev.wings.inventory;
 
 
+import java.util.Collections;
+
 import com.elytradev.wings.Wings;
 import com.elytradev.wings.tile.TileEntityConverter;
 import net.minecraft.entity.player.EntityPlayer;
@@ -74,6 +76,12 @@ public class ContainerConverter extends Container {
 			te.resync(listeners);
 		}
 		super.detectAndSendChanges();
+	}
+	
+	@Override
+	public void addListener(IContainerListener listener) {
+		super.addListener(listener);
+		te.resync(Collections.singletonList(listener));
 	}
 	
 	@Override
