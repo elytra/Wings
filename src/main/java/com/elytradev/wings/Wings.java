@@ -27,6 +27,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -75,6 +76,38 @@ public class Wings {
 		NetworkRegistry.INSTANCE.registerGuiHandler(this, new WingsGuiHandler());
 		
 		proxy.preInit();
+	}
+	
+	@EventHandler
+	public void onInit(FMLInitializationEvent e) {
+		ConverterRecipes.registerFluid("lava", 150);
+		ConverterRecipes.registerFluid("oil", 500);
+		ConverterRecipes.registerFluid("fuel", 750);
+		ConverterRecipes.registerFluid("gasoline", 750);
+		ConverterRecipes.registerFluid("pyrotheum", 650);
+		ConverterRecipes.registerFluid("crude_oil", 350);
+		ConverterRecipes.registerFluid("tree_oil", 250);
+		ConverterRecipes.registerFluid("creosote", 100);
+		ConverterRecipes.registerFluid("refined_oil", 650);
+		ConverterRecipes.registerFluid("refined_fuel", 850);
+		ConverterRecipes.registerFluid("coal", 500);
+		ConverterRecipes.registerFluid("canolaoil", 250);
+		ConverterRecipes.registerFluid("crystaloil", 500);
+		ConverterRecipes.registerFluid("empoweredoil", 750);
+		ConverterRecipes.registerFluid("kerosene", 950);
+		ConverterRecipes.registerFluid("pain", 10);
+		ConverterRecipes.registerFluid("soylent", 5);
+		
+		
+		ConverterRecipes.registerItem(Items.COAL, 12);
+		ConverterRecipes.registerItem(Blocks.COAL_BLOCK, 120);
+		
+		
+		ConverterRecipes.registerItem("coal", 12);
+		ConverterRecipes.registerItem("charcoal", 12);
+		ConverterRecipes.registerItem("fuelCoke", 32);
+		ConverterRecipes.registerItem("plankWood", 2);
+		ConverterRecipes.registerItem("logWood", 10);
 	}
 	
 	@EventHandler
