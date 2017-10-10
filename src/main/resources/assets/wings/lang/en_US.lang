@@ -9,6 +9,7 @@ fluid.wings.empty=Empty
 
 container.wings.converter=Fuel Converter
 tile.wings.converter.name=Fuel Converter
+gui.jei.category.wings.fuelConverter=Fuel Converter
 
 attribute.name.wings:generic.flightSpeed=Flight Speed
 
