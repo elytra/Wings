@@ -2,8 +2,10 @@
 item.wings.leather_elytra.name=Flappy Wings
 item.wings.metal_elytra.name=Clanky Wings
 item.wings.metal_jet_elytra.name=Zoomy Wings
+item.wings.goggles.name=Flight Goggles
 
 fluid.wings.jetfuel=Jet Fuel
+fluid.wings.empty=Empty
 
 container.wings.converter=Fuel Converter
 tile.wings.converter.name=Fuel Converter

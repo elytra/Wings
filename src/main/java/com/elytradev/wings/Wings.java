@@ -1,6 +1,7 @@
 package com.elytradev.wings;
 
 import com.elytradev.wings.block.BlockConverter;
+import com.elytradev.wings.item.ItemGoggles;
 import com.elytradev.wings.item.ItemLeatherElytra;
 import com.elytradev.wings.item.ItemMetalElytra;
 import com.elytradev.wings.item.ItemMetalJetElytra;
@@ -44,6 +45,7 @@ public class Wings {
 	public static ItemLeatherElytra LEATHER_ELYTRA;
 	public static ItemMetalElytra METAL_ELYTRA;
 	public static ItemMetalJetElytra METAL_JET_ELYTRA;
+	public static ItemGoggles GOGGLES;
 	
 	public static Fluid JET_FUEL;
 	
@@ -145,6 +147,11 @@ public class Wings {
 		e.getRegistry().register((METAL_JET_ELYTRA = new ItemMetalJetElytra())
 				.setUnlocalizedName("wings.metal_jet_elytra")
 				.setRegistryName("metal_jet_elytra"));
+		
+		
+		e.getRegistry().register((GOGGLES = new ItemGoggles())
+				.setUnlocalizedName("wings.goggles")
+				.setRegistryName("goggles"));
 		
 		e.getRegistry().register(new ItemBlock(CONVERTER).setRegistryName("converter"));
 	}

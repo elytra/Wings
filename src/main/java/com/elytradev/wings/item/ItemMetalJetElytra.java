@@ -108,6 +108,11 @@ public class ItemMetalJetElytra extends ItemWings {
 	}
 	
 	@Override
+	public boolean isDamageable() {
+		return false;
+	}
+	
+	@Override
 	public double getDurabilityForDisplay(ItemStack stack) {
 		FluidStack content = getFluidContents(stack);
 		if (content == null) {

@@ -97,6 +97,7 @@ public class ClientProxy extends Proxy {
 		imm.register(Wings.METAL_JET_ELYTRA, new DummyMeshDefinition("wings:metal_jet_elytra#inventory"));
 		
 		imm.register(Item.getItemFromBlock(Wings.CONVERTER), new DummyMeshDefinition("wings:converter#inventory"));
+		imm.register(Wings.GOGGLES, new DummyMeshDefinition("wings:goggles#inventory"));
 		
 		String cat = "key.categories.wings";
 		String catF = cat+".inFlightMode";
