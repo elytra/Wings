@@ -80,6 +80,7 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 	@Override
 	public void update() {
 		if (hasWorld() && !getWorld().isRemote) {
+			if (getWorld().isBlockPowered(getPos())) return;
 			if (inputTank.getFluid() != null && inputTank.getFluid().getFluid() == Wings.JET_FUEL) {
 				FluidUtil.tryFluidTransfer(outputTank, inputTank, inputTank.getCapacity(), true);
 			}
