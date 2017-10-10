@@ -117,6 +117,10 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 				operationProgress++;
 				if (inputTank.getFluidAmount() <= 0 && (inputItem.isEmpty() || TileEntityFurnace.getItemBurnTime(inputItem) == 0)) {
 					operationProgress = 0;
+					return;
+				}
+				if (inputItem.isEmpty() && inputTank.getFluid() != null && inputTank.getFluid().getFluid() == Wings.JET_FUEL) {
+					operationProgress = OPERATION_TIME;
 				}
 				if (operationProgress >= OPERATION_TIME) {
 					operationProgress = 0;
