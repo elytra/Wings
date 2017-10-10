@@ -1,18 +1,24 @@
 package com.elytradev.wings.item;
 
+import java.util.List;
+
 import com.elytradev.wings.Wings;
 
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fluids.capability.FluidTankProperties;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class ItemMetalJetElytra extends ItemWings {
 
@@ -44,35 +50,32 @@ public class ItemMetalJetElytra extends ItemWings {
 
 		@Override
 		public IFluidTankProperties[] getTankProperties() {
-			return new IFluidTankProperties[] {
-					new FluidTankProperties(getFluidContents(stack), FUEL_CAPACITY)
-			};
+			return getFluidContents(stack).getTankProperties();
 		}
 
 		@Override
 		public int fill(FluidStack resource, boolean doFill) {
-			if (resource.getFluid() == Wings.JET_FUEL) {
-				FluidStack cur = getFluidContents(stack);
-				if (FluidStack.areFluidStackTagsEqual(resource, cur)) {
-					int amt = Math.min(FUEL_CAPACITY-cur.amount, resource.amount);
-					if (doFill) {
-						cur.amount -= amt;
-						setFluidContents(stack, cur);
-					}
-					return amt;
-				}
-			}
-			return 0;
+			if (resource.getFluid() != Wings.JET_FUEL) return 0;
+			FluidTank tank = getFluidContents(stack);
+			int rtrn = tank.fill(resource, doFill);
+			setFluidContents(stack, tank);
+			return rtrn;
 		}
 
 		@Override
 		public FluidStack drain(FluidStack resource, boolean doDrain) {
-			return null;
+			FluidTank tank = getFluidContents(stack);
+			FluidStack rtrn = tank.drain(resource, doDrain);
+			setFluidContents(stack, tank);
+			return rtrn;
 		}
 
 		@Override
 		public FluidStack drain(int maxDrain, boolean doDrain) {
-			return null;
+			FluidTank tank = getFluidContents(stack);
+			FluidStack rtrn = tank.drain(maxDrain, doDrain);
+			setFluidContents(stack, tank);
+			return rtrn;
 		}
 
 		@Override
@@ -113,32 +116,33 @@ public class ItemMetalJetElytra extends ItemWings {
 	}
 	
 	@Override
+	@SideOnly(Side.CLIENT)
+	public void addInformation(ItemStack stack, World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+		tooltip.add(getFluidContents(stack).getFluidAmount()+"/"+FUEL_CAPACITY+" mB");
+	}
+	
+	@Override
 	public double getDurabilityForDisplay(ItemStack stack) {
-		FluidStack content = getFluidContents(stack);
-		if (content == null) {
+		FluidTank content = getFluidContents(stack);
+		if (content.getFluidAmount() <= 0) {
 			return 1;
 		}
-		return 1-(content.amount / (double)FUEL_CAPACITY);
+		return 1-(content.getFluidAmount() / (double)content.getCapacity());
 	}
 	
-	public FluidStack getFluidContents(ItemStack stack) {
+	public FluidTank getFluidContents(ItemStack stack) {
+		FluidTank tank = new FluidTank(FUEL_CAPACITY);
 		if (stack.hasTagCompound() && stack.getTagCompound().hasKey("Fluid", NBT.TAG_COMPOUND)) {
-			return FluidStack.loadFluidStackFromNBT(stack.getTagCompound().getCompoundTag("Fluid"));
+			tank.readFromNBT(stack.getTagCompound().getCompoundTag("Fluid"));
 		}
-		return null;
+		return tank;
 	}
 	
-	public void setFluidContents(ItemStack stack, FluidStack fluid) {
-		if (fluid != null) {
-			if (!stack.hasTagCompound()) {
-				stack.setTagCompound(new NBTTagCompound());
-			}
-			stack.getTagCompound().setTag("Fluid", fluid.writeToNBT(new NBTTagCompound()));
-		} else {
-			if (stack.hasTagCompound()) {
-				stack.getTagCompound().removeTag("Fluid");
-			}
+	public void setFluidContents(ItemStack stack, FluidTank fluid) {
+		if (!stack.hasTagCompound()) {
+			stack.setTagCompound(new NBTTagCompound());
 		}
+		stack.getTagCompound().setTag("Fluid", fluid.writeToNBT(new NBTTagCompound()));
 	}
 	
 	

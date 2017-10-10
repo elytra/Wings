@@ -1,5 +1,7 @@
 package com.elytradev.wings.tile;
 
+import java.util.List;
+
 import com.elytradev.wings.Wings;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
@@ -51,7 +53,6 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 			.put("crystaloil", 0.5)
 			.put("empoweredoil", 0.75)
 			.put("kerosene", 0.95)
-			.put("wings.jetfuel", 1.0)
 			.put("pain", 0.01)
 			.put("soylent", 0.005)
 			.build();
@@ -63,6 +64,9 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 	public static final int OPERATION_TIME = 160;
 	
 	public ItemStack inputItem = ItemStack.EMPTY;
+	public ItemStack outputItem = ItemStack.EMPTY;
+	
+	private ItemStack inputItemAtOperationStart = ItemStack.EMPTY;
 	
 	public FluidTank inputTank;
 	public FluidTank outputTank;
@@ -81,6 +85,11 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 		} else {
 			inputItem = ItemStack.EMPTY;
 		}
+		if (compound.hasKey("OutputItem", NBT.TAG_COMPOUND)) {
+			outputItem = new ItemStack(compound.getCompoundTag("OutputItem"));
+		} else {
+			outputItem = ItemStack.EMPTY;
+		}
 		inputTank.readFromNBT(compound.getCompoundTag("InputTank"));
 		outputTank.readFromNBT(compound.getCompoundTag("OutputTank"));
 		super.readFromNBT(compound);
@@ -89,6 +98,7 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
 		compound.setTag("InputItem", inputItem.serializeNBT());
+		compound.setTag("OutputItem", outputItem.serializeNBT());
 		compound.setTag("InputTank", inputTank.writeToNBT(new NBTTagCompound()));
 		compound.setTag("OutputTank", outputTank.writeToNBT(new NBTTagCompound()));
 		return super.writeToNBT(compound);
@@ -97,6 +107,9 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 	@Override
 	public void update() {
 		if (hasWorld() && !getWorld().isRemote) {
+			if (inputTank.getFluid() != null && inputTank.getFluid().getFluid() == Wings.JET_FUEL) {
+				FluidUtil.tryFluidTransfer(outputTank, inputTank, inputTank.getCapacity(), true);
+			}
 			if (!inputItem.isEmpty()) {
 				FluidActionResult far = FluidUtil.tryEmptyContainer(inputItem, inputTank, inputTank.getCapacity(), null, true);
 				if (far.success) {
@@ -106,12 +119,14 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 			}
 			if (operationProgress <= 0) {
 				int burnTime = TileEntityFurnace.getItemBurnTime(inputItem);
-				if (burnTime > 0 && inputItem.getItem() != Items.LAVA_BUCKET) {
+				if (burnTime > 0 && inputItem.getItem() != Items.LAVA_BUCKET && outputTank.getFluidAmount() < outputTank.getCapacity()) {
 					operationProgress = 1;
+					inputItemAtOperationStart = inputItem;
 				}
 				if (inputTank.getFluidAmount() > 0 && outputTank.getFluidAmount() < outputTank.getCapacity()
 						&& FLUID_CONVERSION_RATES.containsKey(FluidRegistry.getFluidName(inputTank.getFluid()))) {
 					operationProgress = 1;
+					inputItemAtOperationStart = inputItem;
 				}
 			} else {
 				operationProgress++;
@@ -119,21 +134,23 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 					operationProgress = 0;
 					return;
 				}
-				if (inputItem.isEmpty() && inputTank.getFluid() != null && inputTank.getFluid().getFluid() == Wings.JET_FUEL) {
-					operationProgress = OPERATION_TIME;
+				if (!ItemStack.areItemsEqual(inputItem, inputItemAtOperationStart) || !ItemStack.areItemStackTagsEqual(inputItem, inputItemAtOperationStart)) {
+					operationProgress = 0;
+					return;
 				}
 				if (operationProgress >= OPERATION_TIME) {
 					operationProgress = 0;
+					boolean checkFluid = true;
 					if (!inputItem.isEmpty() && inputItem.getItem() != Items.LAVA_BUCKET) {
 						int burnTime = TileEntityFurnace.getItemBurnTime(inputItem);
 						if (burnTime > 0) {
 							outputTank.fill(new FluidStack(Wings.JET_FUEL, (int) (burnTime*MB_PER_FURNACE_TICK)), true);
 							inputItem.shrink(1);
 							markDirty();
-							return;
+							checkFluid = false;
 						}
 					}
-					if (inputTank.getFluidAmount() > 0) {
+					if (checkFluid && inputTank.getFluidAmount() > 0) {
 						double rate = FLUID_CONVERSION_RATES.getOrDefault(FluidRegistry.getFluidName(inputTank.getFluid()), 0D);
 						FluidStack out = inputTank.drain(1000, true);
 						if (out != null) {
@@ -143,19 +160,32 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 					}
 				}
 			}
+			if (!outputItem.isEmpty()) {
+				FluidActionResult far = FluidUtil.tryFillContainer(outputItem, outputTank, outputTank.getFluidAmount(), null, true);
+				if (far.success) {
+					outputItem = far.result;
+					markDirty();
+				}
+			}
 		}
 	}
 	
-	@Override
-	public void markDirty() {
-		super.markDirty();
+	public void resync(List<? super EntityPlayerMP> players) {
 		if (hasWorld() && getWorld() instanceof WorldServer) {
 			WorldServer ws = (WorldServer)getWorld();
 			Chunk c = getWorld().getChunkFromBlockCoords(getPos());
 			SPacketUpdateTileEntity packet = new SPacketUpdateTileEntity(getPos(), getBlockMetadata(), getUpdateTag());
-			for (EntityPlayerMP player : getWorld().getPlayers(EntityPlayerMP.class, Predicates.alwaysTrue())) {
-				if (ws.getPlayerChunkMap().isPlayerWatchingChunk(player, c.x, c.z)) {
-					player.connection.sendPacket(packet);
+			if (players == null) {
+				for (EntityPlayerMP player : getWorld().getPlayers(EntityPlayerMP.class, Predicates.alwaysTrue())) {
+					if (ws.getPlayerChunkMap().isPlayerWatchingChunk(player, c.x, c.z)) {
+						player.connection.sendPacket(packet);
+					}
+				}
+			} else {
+				for (Object o : players) {
+					if (o instanceof EntityPlayerMP) {
+						((EntityPlayerMP)o).connection.sendPacket(packet);
+					}
 				}
 			}
 		}
@@ -198,43 +228,61 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 
 	@Override
 	public int getSizeInventory() {
-		return 1;
+		return 2;
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return getStackInSlot(0).isEmpty();
+		return inputItem.isEmpty() && outputItem.isEmpty();
 	}
 
 	@Override
 	public ItemStack getStackInSlot(int index) {
-		if (index != 0) throw new IndexOutOfBoundsException(Integer.toString(index));
-		return inputItem;
+		switch (index) {
+			case 0: return inputItem;
+			case 1: return outputItem;
+			default: throw new IndexOutOfBoundsException(Integer.toString(index));
+		}
 	}
 
 	@Override
 	public ItemStack decrStackSize(int index, int count) {
-		if (index != 0) throw new IndexOutOfBoundsException(Integer.toString(index));
-		ItemStack rtrn = inputItem.splitStack(count);
+		ItemStack rtrn = getStackInSlot(index).splitStack(count);
 		markDirty();
 		return rtrn;
 	}
 
 	@Override
 	public ItemStack removeStackFromSlot(int index) {
-		if (index != 0) throw new IndexOutOfBoundsException(Integer.toString(index));
-		ItemStack i = inputItem;
-		inputItem = ItemStack.EMPTY;
-		operationProgress = 0;
+		ItemStack i;
+		switch (index) {
+			case 0:
+				i = inputItem;
+				inputItem = ItemStack.EMPTY;
+				break;
+			case 1:
+				i = outputItem;
+				outputItem = ItemStack.EMPTY;
+				break;
+			default:
+				throw new IndexOutOfBoundsException(Integer.toString(index));
+		}
 		markDirty();
 		return i;
 	}
 
 	@Override
 	public void setInventorySlotContents(int index, ItemStack stack) {
-		if (index != 0) throw new IndexOutOfBoundsException(Integer.toString(index));
-		inputItem = stack;
-		operationProgress = 0;
+		switch (index) {
+			case 0:
+				inputItem = stack;
+				break;
+			case 1:
+				outputItem = stack;
+				break;
+			default:
+				throw new IndexOutOfBoundsException(Integer.toString(index));
+		}
 		markDirty();
 	}
 
@@ -260,7 +308,7 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 
 	@Override
 	public boolean isItemValidForSlot(int index, ItemStack stack) {
-		if (index != 0) throw new IndexOutOfBoundsException(Integer.toString(index));
+		if (index < 0 || index > 1) throw new IndexOutOfBoundsException(Integer.toString(index));
 		return true;
 	}
 
@@ -285,6 +333,7 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 	@Override
 	public void clear() {
 		inputItem = ItemStack.EMPTY;
+		outputItem = ItemStack.EMPTY;
 		markDirty();
 	}
 

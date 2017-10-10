@@ -58,7 +58,7 @@ public class GuiConverter extends GuiContainer {
 		drawTexturedModalRect(8, 9, 176, 18, 16, 60);
 		drawTexturedModalRect(152, 9, 176, 18, 16, 60);
 		
-		drawTexturedModalRect(68, 32, 176, 0, (int)((container.progress/(double)TileEntityConverter.OPERATION_TIME)*63), 17);
+		drawTexturedModalRect(56, 32, 176, 0, (int)((container.progress/(double)TileEntityConverter.OPERATION_TIME)*63), 17);
 		
 		GlStateManager.pushMatrix();
 		int x = (width - xSize) / 2;

@@ -1,8 +1,8 @@
 package com.elytradev.wings.inventory;
 
 
+import com.elytradev.wings.Wings;
 import com.elytradev.wings.tile.TileEntityConverter;
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
@@ -10,6 +10,9 @@ import net.minecraft.inventory.IContainerListener;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 
 public class ContainerConverter extends Container {
 
@@ -18,11 +21,20 @@ public class ContainerConverter extends Container {
 	
 	public int progress;
 	
+	private FluidStack lastInputFluid;
+	private FluidStack lastOutputFluid;
+	
 	public ContainerConverter(InventoryPlayer playerInventory, TileEntityConverter te) {
 		this.te = te;
 		this.playerInventory = playerInventory;
 		
-		addSlotToContainer(new Slot(te, 0, 38, 32));
+		addSlotToContainer(new Slot(te, 0, 34, 32));
+		addSlotToContainer(new Slot(te, 1, 126, 32) {
+			@Override
+			public int getSlotStackLimit() {
+				return 1;
+			}
+		});
 		
 		for (int y = 0; y < 3; ++y) {
 			for (int x = 0; x < 9; ++x) {
@@ -55,6 +67,12 @@ public class ContainerConverter extends Container {
 				icl.sendWindowProperty(this, 0, te.getField(0));
 			}
 		}
+		if ((lastInputFluid == null ? te.inputTank.getFluid() != null : !lastInputFluid.isFluidStackIdentical(te.inputTank.getFluid())) ||
+				(lastOutputFluid == null ? te.outputTank.getFluid() != null : !lastOutputFluid.isFluidStackIdentical(te.outputTank.getFluid()))) {
+			lastInputFluid = te.inputTank.getFluid() == null ? null : te.inputTank.getFluid().copy();
+			lastOutputFluid = te.outputTank.getFluid() == null ? null : te.outputTank.getFluid().copy();
+			te.resync(listeners);
+		}
 		super.detectAndSendChanges();
 	}
 	
@@ -66,13 +84,27 @@ public class ContainerConverter extends Container {
 			ItemStack cur = slot.getStack();
 			ItemStack copy = cur.copy();
 
-			if (index == 0) {
-				if (!mergeItemStack(cur, 1, 37, true)) {
-					return ItemStack.EMPTY;
+			glass: {
+				if (index == 0 || index == 1) {
+					if (!mergeItemStack(cur, 1, 37, true)) {
+						return ItemStack.EMPTY;
+					}
+					slot.onSlotChange(cur, copy);
+				} else {
+					// bucket support
+					ItemStack singleCopy = cur.copy();
+					singleCopy.setCount(1);
+					if (singleCopy.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null)) {
+						IFluidHandlerItem ifhi = singleCopy.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null);
+						if (ifhi.fill(new FluidStack(Wings.JET_FUEL, 90000), false) > 0) {
+							if (mergeItemStack(cur, 1, 2, false)) break glass;
+						}
+						if (ifhi.drain(90000, false) != null) {
+							if (mergeItemStack(cur, 0, 1, false)) break glass;
+						}
+					}
+					if (!mergeItemStack(cur, 0, 2, false)) return ItemStack.EMPTY;
 				}
-				slot.onSlotChange(cur, copy);
-			} else if (!mergeItemStack(cur, 0, 1, false)) {
-				return ItemStack.EMPTY;
 			}
 
 			if (cur.isEmpty()) {
