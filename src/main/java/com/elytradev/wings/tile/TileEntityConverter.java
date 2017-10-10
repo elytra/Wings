@@ -111,7 +111,7 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 				FluidUtil.tryFluidTransfer(outputTank, inputTank, inputTank.getCapacity(), true);
 			}
 			if (!inputItem.isEmpty()) {
-				FluidActionResult far = FluidUtil.tryEmptyContainer(inputItem, inputTank, inputTank.getCapacity(), null, true);
+				FluidActionResult far = FluidUtil.tryEmptyContainer(inputItem, this, inputTank.getCapacity(), null, true);
 				if (far.success) {
 					inputItem = far.result;
 					markDirty();
@@ -347,6 +347,8 @@ public class TileEntityConverter extends TileEntity implements IInventory, IFlui
 
 	@Override
 	public int fill(FluidStack resource, boolean doFill) {
+		if (resource == null) return 0;
+		if (!FLUID_CONVERSION_RATES.containsKey(FluidRegistry.getFluidName(resource))) return 0;
 		int rtrn = inputTank.fill(resource, doFill);
 		if (doFill) markDirty();
 		return rtrn;
