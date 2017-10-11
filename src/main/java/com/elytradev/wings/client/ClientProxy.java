@@ -10,8 +10,8 @@ import com.elytradev.wings.WingsPlayer;
 import com.elytradev.wings.Proxy;
 import com.elytradev.wings.Wings;
 import com.elytradev.wings.WingsPlayer.FlightState;
-import com.elytradev.wings.client.key.KeyBindingFlightMode;
-import com.elytradev.wings.client.key.KeyEntryFlightMode;
+import com.elytradev.wings.client.key.KeyBindingAdvanced;
+import com.elytradev.wings.client.key.KeyEntryAdvanced;
 import com.elytradev.wings.client.render.LayerWings;
 import com.elytradev.wings.client.render.WingsTileEntityItemStackRenderer;
 import com.elytradev.wings.item.ItemWings;
@@ -64,7 +64,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 
 public class ClientProxy extends Proxy {
 
-	private KeyBinding TOGGLE_FLIGHT_MODE;
+	private KeyBinding TOGGLE_ADVANCED;
 	private KeyBinding ROLL_CCW;
 	private KeyBinding ROLL_CW;
 	
@@ -82,12 +82,12 @@ public class ClientProxy extends Proxy {
 	private KeyBinding TURN_LEFT;
 	private KeyBinding TURN_RIGHT;
 	
-	private IKeyConflictContext FLIGHT_MODE_KCC = new IKeyConflictContext() {
+	private IKeyConflictContext ADVANCED_FLIGHT_KCC = new IKeyConflictContext() {
 		
 		@Override
 		public boolean isActive() {
 			if (Minecraft.getMinecraft().player != null) {
-				return WingsPlayer.get(Minecraft.getMinecraft().player).flightState == FlightState.FLYING_FLIGHT_MODE;
+				return WingsPlayer.get(Minecraft.getMinecraft().player).flightState == FlightState.FLYING_ADVANCED;
 			}
 			return false;
 		}
@@ -126,16 +126,16 @@ public class ClientProxy extends Proxy {
 		imm.register(Wings.GOGGLES, new DummyMeshDefinition("wings:goggles#inventory"));
 		
 		String cat = "key.categories.wings";
-		String catF = cat+".inFlightMode";
+		String catF = cat+".advanced";
 		String catFM = catF+".movement";
 		
-		ClientRegistry.registerKeyBinding(TOGGLE_FLIGHT_MODE = new KeyBinding("key.wings.toggleFlightMode", KeyConflictContext.IN_GAME, Keyboard.KEY_Z, cat));
+		ClientRegistry.registerKeyBinding(TOGGLE_ADVANCED = new KeyBinding("key.wings.toggleAdvanced", KeyConflictContext.IN_GAME, Keyboard.KEY_Z, cat));
 		
 		
-		ClientRegistry.registerKeyBinding(TOGGLE_THRUSTER = new KeyBindingFlightMode("key.wings.toggleThruster", FLIGHT_MODE_KCC, Keyboard.KEY_LCONTROL, catF));
-		ClientRegistry.registerKeyBinding(AFTERBURNER = new KeyBindingFlightMode("key.wings.afterburner", FLIGHT_MODE_KCC, Keyboard.KEY_SPACE, catF));
+		ClientRegistry.registerKeyBinding(TOGGLE_THRUSTER = new KeyBindingAdvanced("key.wings.toggleThruster", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LCONTROL, catF));
+		ClientRegistry.registerKeyBinding(AFTERBURNER = new KeyBindingAdvanced("key.wings.afterburner", ADVANCED_FLIGHT_KCC, Keyboard.KEY_SPACE, catF));
 		
-		ClientRegistry.registerKeyBinding(THROTTLE_UP = new KeyBindingFlightMode("key.wings.throttleUp", FLIGHT_MODE_KCC, Keyboard.KEY_NONE, catF) {
+		ClientRegistry.registerKeyBinding(THROTTLE_UP = new KeyBindingAdvanced("key.wings.throttleUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF) {
 			@Override
 			public String getDisplayName() {
 				if (getKeyCode() == Keyboard.KEY_NONE) {
@@ -144,7 +144,7 @@ public class ClientProxy extends Proxy {
 				return super.getDisplayName();
 			}
 		});
-		ClientRegistry.registerKeyBinding(THROTTLE_DOWN = new KeyBindingFlightMode("key.wings.throttleDown", FLIGHT_MODE_KCC, Keyboard.KEY_NONE, catF) {
+		ClientRegistry.registerKeyBinding(THROTTLE_DOWN = new KeyBindingAdvanced("key.wings.throttleDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF) {
 			@Override
 			public String getDisplayName() {
 				if (getKeyCode() == Keyboard.KEY_NONE) {
@@ -155,16 +155,16 @@ public class ClientProxy extends Proxy {
 			
 		});
 		
-		ClientRegistry.registerKeyBinding(BRAKE = new KeyBindingFlightMode("key.wings.brake", FLIGHT_MODE_KCC, Keyboard.KEY_LSHIFT, catFM));
+		ClientRegistry.registerKeyBinding(BRAKE = new KeyBindingAdvanced("key.wings.brake", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LSHIFT, catFM));
 		
-		ClientRegistry.registerKeyBinding(ROLL_CCW = new KeyBindingFlightMode("key.wings.rollCCW", FLIGHT_MODE_KCC, Keyboard.KEY_Q, catFM));
-		ClientRegistry.registerKeyBinding(ROLL_CW = new KeyBindingFlightMode("key.wings.rollCW", FLIGHT_MODE_KCC, Keyboard.KEY_E, catFM));
+		ClientRegistry.registerKeyBinding(ROLL_CCW = new KeyBindingAdvanced("key.wings.rollCCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_Q, catFM));
+		ClientRegistry.registerKeyBinding(ROLL_CW = new KeyBindingAdvanced("key.wings.rollCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_E, catFM));
 		
-		ClientRegistry.registerKeyBinding(PITCH_UP = new KeyBindingFlightMode("key.wings.pitchUp", FLIGHT_MODE_KCC, Keyboard.KEY_W, catFM));
-		ClientRegistry.registerKeyBinding(PITCH_DOWN = new KeyBindingFlightMode("key.wings.pitchDown", FLIGHT_MODE_KCC, Keyboard.KEY_S, catFM));
+		ClientRegistry.registerKeyBinding(PITCH_UP = new KeyBindingAdvanced("key.wings.pitchUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_W, catFM));
+		ClientRegistry.registerKeyBinding(PITCH_DOWN = new KeyBindingAdvanced("key.wings.pitchDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_S, catFM));
 		
-		ClientRegistry.registerKeyBinding(TURN_LEFT = new KeyBindingFlightMode("key.wings.turnLeft", FLIGHT_MODE_KCC, Keyboard.KEY_A, catFM));
-		ClientRegistry.registerKeyBinding(TURN_RIGHT = new KeyBindingFlightMode("key.wings.turnRight", FLIGHT_MODE_KCC, Keyboard.KEY_D, catFM));
+		ClientRegistry.registerKeyBinding(TURN_LEFT = new KeyBindingAdvanced("key.wings.turnLeft", ADVANCED_FLIGHT_KCC, Keyboard.KEY_A, catFM));
+		ClientRegistry.registerKeyBinding(TURN_RIGHT = new KeyBindingAdvanced("key.wings.turnRight", ADVANCED_FLIGHT_KCC, Keyboard.KEY_D, catFM));
 		
 		MinecraftForge.EVENT_BUS.register(this);
 	}
@@ -188,8 +188,8 @@ public class ClientProxy extends Proxy {
 				if (arr[i] instanceof KeyEntry) {
 					KeyEntry ke = (KeyEntry)arr[i];
 					KeyBinding kb = keybinding.get(ke);
-					if (kb instanceof KeyBindingFlightMode) {
-						arr[i] = new KeyEntryFlightMode(gkbl, (KeyBindingFlightMode)kb);
+					if (kb instanceof KeyBindingAdvanced) {
+						arr[i] = new KeyEntryAdvanced(gkbl, (KeyBindingAdvanced)kb);
 					}
 				}
 			}
@@ -198,10 +198,10 @@ public class ClientProxy extends Proxy {
 	
 	private boolean jumpTainted = false;
 	private boolean lastOnGround = false;
-	private boolean lastToggleFlightModeIsDown = false;
+	private boolean lastToggleAdvancedDown = false;
 	private FlightState lastFlightState = FlightState.NONE;
 	private int flightTicks = 0;
-	private int flightModeTicks = 0;
+	private int advancedFlightTicks = 0;
 	private IFluidTankProperties[] lastTickFluidProperties = null;
 	
 	@SubscribeEvent
@@ -212,7 +212,7 @@ public class ClientProxy extends Proxy {
 			if (ep != null) {
 				ItemStack chest = ep.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
 				
-				if (lastFlightState == FlightState.FLYING || lastFlightState == FlightState.FLYING_FLIGHT_MODE) {
+				if (lastFlightState == FlightState.FLYING || lastFlightState == FlightState.FLYING_ADVANCED) {
 					flightTicks++;
 				} else if (flightTicks > 10) {
 					flightTicks = 10;
@@ -225,12 +225,12 @@ public class ClientProxy extends Proxy {
 				if (chest.getItem() instanceof ItemWings) {
 					ItemWings wings = (ItemWings)chest.getItem();
 					
-					if (lastFlightState == FlightState.FLYING_FLIGHT_MODE) {
-						flightModeTicks++;
-					} else if (flightModeTicks > 10) {
-						flightModeTicks = 10;
-					} else if (flightModeTicks > 0) {
-						flightModeTicks--;
+					if (lastFlightState == FlightState.FLYING_ADVANCED) {
+						advancedFlightTicks++;
+					} else if (advancedFlightTicks > 10) {
+						advancedFlightTicks = 10;
+					} else if (advancedFlightTicks > 0) {
+						advancedFlightTicks--;
 					}
 					
 					if (!mc.gameSettings.keyBindJump.isKeyDown()) {
@@ -249,17 +249,17 @@ public class ClientProxy extends Proxy {
 					if (ep.onGround && !lastOnGround) {
 						newState = FlightState.NONE;
 					}
-					if (TOGGLE_FLIGHT_MODE.isKeyDown()) {
-						if (!lastToggleFlightModeIsDown) {
+					if (TOGGLE_ADVANCED.isKeyDown()) {
+						if (!lastToggleAdvancedDown) {
 							if (newState == FlightState.FLYING) {
-								newState = FlightState.FLYING_FLIGHT_MODE;
-							} else if (newState == FlightState.FLYING_FLIGHT_MODE) {
+								newState = FlightState.FLYING_ADVANCED;
+							} else if (newState == FlightState.FLYING_ADVANCED) {
 								newState = FlightState.FLYING;
 							}
 						}
-						lastToggleFlightModeIsDown = true;
+						lastToggleAdvancedDown = true;
 					} else {
-						lastToggleFlightModeIsDown = false;
+						lastToggleAdvancedDown = false;
 					}
 					if (newState == FlightState.FLYING && wings.hasThruster()) {
 						boolean jump = mc.gameSettings.keyBindJump.isKeyDown();
@@ -293,14 +293,14 @@ public class ClientProxy extends Proxy {
 	
 	@SubscribeEvent
 	public void onPreRenderGameOverlay(RenderGameOverlayEvent.Pre e) {
-		if (flightModeTicks > 0) {
+		if (advancedFlightTicks > 0) {
 			float partial = e.getPartialTicks();
-			if (lastFlightState != FlightState.FLYING_FLIGHT_MODE) {
+			if (lastFlightState != FlightState.FLYING_ADVANCED) {
 				partial *= -1;
 			}
-			float interp = MathHelper.sin((Math.min(flightModeTicks+partial, 10)/20f)*((float)Math.PI));
+			float interp = MathHelper.sin((Math.min(advancedFlightTicks+partial, 10)/20f)*((float)Math.PI));
 			if (e.getType() == ElementType.HOTBAR) {
-				if (flightModeTicks > 10) {
+				if (advancedFlightTicks > 10) {
 					e.setCanceled(true);
 				} else {
 					GlStateManager.pushMatrix();
@@ -317,7 +317,7 @@ public class ClientProxy extends Proxy {
 	
 	@SubscribeEvent
 	public void onPostRenderGameOverlay(RenderGameOverlayEvent.Post e) {
-		if (flightModeTicks > 0) {
+		if (advancedFlightTicks > 0) {
 			GlStateManager.popMatrix();
 		}
 		if (e.getType() == ElementType.HOTBAR) {

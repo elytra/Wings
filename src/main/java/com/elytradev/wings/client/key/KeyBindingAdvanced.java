@@ -4,17 +4,17 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.settings.IKeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
 
-public class KeyBindingFlightMode extends KeyBinding {
+public class KeyBindingAdvanced extends KeyBinding {
 
-	public KeyBindingFlightMode(String description, IKeyConflictContext keyConflictContext, int keyCode, String category) {
+	public KeyBindingAdvanced(String description, IKeyConflictContext keyConflictContext, int keyCode, String category) {
 		super(description, keyConflictContext, keyCode, category);
 	}
 
-	public KeyBindingFlightMode(String description, IKeyConflictContext keyConflictContext, KeyModifier keyModifier, int keyCode, String category) {
+	public KeyBindingAdvanced(String description, IKeyConflictContext keyConflictContext, KeyModifier keyModifier, int keyCode, String category) {
 		super(description, keyConflictContext, keyModifier, keyCode, category);
 	}
 
-	public KeyBindingFlightMode(String description, int keyCode, String category) {
+	public KeyBindingAdvanced(String description, int keyCode, String category) {
 		super(description, keyCode, category);
 	}
 	

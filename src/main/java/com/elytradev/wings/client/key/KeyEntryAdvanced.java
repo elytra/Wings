@@ -11,7 +11,7 @@ import net.minecraft.client.gui.GuiKeyBindingList.KeyEntry;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.text.TextFormatting;
 
-public class KeyEntryFlightMode extends KeyEntry {
+public class KeyEntryAdvanced extends KeyEntry {
 
 	private static final Accessor<GuiButton> btnReset = Accessors.findField(KeyEntry.class, "field_148281_e", "btnReset");
 	private static final Accessor<GuiButton> btnChangeKeyBinding = Accessors.findField(KeyEntry.class, "field_148280_d", "btnChangeKeyBinding");
@@ -21,9 +21,9 @@ public class KeyEntryFlightMode extends KeyEntry {
 	private static final Accessor<Integer> maxListLabelWidth = Accessors.findField(GuiKeyBindingList.class, "field_148188_n", "maxListLabelWidth");
 	
 	private final GuiKeyBindingList li;
-	private final KeyBindingFlightMode keybinding;
+	private final KeyBindingAdvanced keybinding;
 	
-	public KeyEntryFlightMode(GuiKeyBindingList li, KeyBindingFlightMode keybinding) {
+	public KeyEntryAdvanced(GuiKeyBindingList li, KeyBindingAdvanced keybinding) {
 		li.super(keybinding);
 		this.li = li;
 		this.keybinding = keybinding;

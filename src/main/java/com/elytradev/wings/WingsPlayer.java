@@ -25,7 +25,7 @@ public final class WingsPlayer {
 		NONE,
 		
 		FLYING,
-		FLYING_FLIGHT_MODE
+		FLYING_ADVANCED
 	}
 
 	// weakKeys implies identity comparison
@@ -62,7 +62,7 @@ public final class WingsPlayer {
 		if (player.isDead) return;
 		rollUpdatesThisTick = 0;
 		
-		if (flightState != FlightState.FLYING_FLIGHT_MODE) {
+		if (flightState != FlightState.FLYING_ADVANCED) {
 			rotationRoll = 0;
 		}
 		

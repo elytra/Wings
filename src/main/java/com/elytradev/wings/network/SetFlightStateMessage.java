@@ -43,7 +43,7 @@ public class SetFlightStateMessage extends Message {
 				// thruster wings can do everything
 				epp.flightState = state;
 			} else {
-				if (state == FlightState.FLYING || state == FlightState.FLYING_FLIGHT_MODE) {
+				if (state == FlightState.FLYING || state == FlightState.FLYING_ADVANCED) {
 					epp.flightState = state;
 				} else {
 					Wings.log.warn("{} attempted to set flight state to {} with wings that don't support that state", player.getName(), state);

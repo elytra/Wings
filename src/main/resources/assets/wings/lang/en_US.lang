@@ -15,10 +15,10 @@ attribute.name.wings:generic.flightSpeed=Flight Speed
 
 
 key.categories.wings=Wings
-key.categories.wings.inFlightMode=Wings (Flight Mode)
-key.categories.wings.inFlightMode.movement=Wings (Flight Mode Movement)
+key.categories.wings.advanced=Wings (Advanced Flight)
+key.categories.wings.advanced.movement=Wings (Advanced Flight Movement)
 
-key.wings.toggleFlightMode=Toggle Flight Mode
+key.wings.toggleAdvanced=Toggle Advanced Flight
 
 key.wings.rollCCW=Roll Counter-Clockwise
 key.wings.rollCW=Roll Clockwise
