@@ -58,7 +58,7 @@ public class ContainerConverter extends Container {
 	
 	@Override
 	public boolean canInteractWith(EntityPlayer playerIn) {
-		return playerIn.getDistanceSqToCenter(te.getPos()) < 16;
+		return playerIn.getDistanceSqToCenter(te.getPos()) < 32;
 	}
 	
 	@Override

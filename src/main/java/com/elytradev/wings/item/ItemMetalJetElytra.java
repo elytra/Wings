@@ -102,7 +102,7 @@ public class ItemMetalJetElytra extends ItemWings {
 	
 	@Override
 	public int getRGBDurabilityForDisplay(ItemStack stack) {
-		return 0xAF9404;
+		return 0xEEFF00;
 	}
 	
 	@Override
@@ -149,6 +149,22 @@ public class ItemMetalJetElytra extends ItemWings {
 	@Override
 	public ICapabilityProvider initCapabilities(ItemStack stack, NBTTagCompound nbt) {
 		return new CapabilityProvider(stack);
+	}
+	
+	@Override
+	public boolean burnFuel(ItemStack stack, int amt, boolean simulate) {
+		FluidTank tank = getFluidContents(stack);
+		int mbAmt = amt;
+		FluidStack res = tank.drain(mbAmt, true);
+		if (res == null || res.amount != mbAmt) {
+			Wings.log.info("Not enough fuel (wanted {}, got {})", mbAmt, res == null ? 0 : res.amount);
+			return false;
+		}
+		if (!simulate) {
+			setFluidContents(stack, tank);
+			Wings.log.info("Burned {} mB of jet fuel", mbAmt);
+		}
+		return true;
 	}
 	
 }

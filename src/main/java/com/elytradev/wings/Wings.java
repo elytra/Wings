@@ -1,12 +1,19 @@
 package com.elytradev.wings;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.elytradev.concrete.network.NetworkContext;
 import com.elytradev.wings.block.BlockConverter;
 import com.elytradev.wings.item.ItemGoggles;
 import com.elytradev.wings.item.ItemLeatherElytra;
 import com.elytradev.wings.item.ItemMetalElytra;
 import com.elytradev.wings.item.ItemMetalJetElytra;
+import com.elytradev.wings.network.PlayerRollMessage;
+import com.elytradev.wings.network.SetFlightStateMessage;
+import com.elytradev.wings.network.SetRollMessage;
+import com.elytradev.wings.network.SetThrusterMessage;
 import com.elytradev.wings.tile.TileEntityConverter;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.ai.attributes.IAttribute;
@@ -31,13 +38,16 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
+import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.OreDictionary;
 
 @Mod(modid=Wings.MODID, name=Wings.NAME, version=Wings.VERSION)
 public class Wings {
-
+	public static final Logger log = LogManager.getLogger("Wings");
+	
 	public static final String MODID = "wings";
 	public static final String NAME = "Wings";
 	public static final String VERSION = "@VERSION@";
@@ -58,6 +68,9 @@ public class Wings {
 	@Instance
 	public static Wings inst;
 	
+	
+	public NetworkContext network;
+	
 	static {
 		FluidRegistry.enableUniversalBucket();
 	}
@@ -74,12 +87,18 @@ public class Wings {
 		
 		GameRegistry.registerTileEntity(TileEntityConverter.class, "wings:converter");
 		
+		network = NetworkContext.forChannel("wings");
+		network.register(SetFlightStateMessage.class);
+		network.register(SetThrusterMessage.class);
+		network.register(SetRollMessage.class);
+		network.register(PlayerRollMessage.class);
 		NetworkRegistry.INSTANCE.registerGuiHandler(this, new WingsGuiHandler());
 		
 		OreDictionary.registerOre("coal", new ItemStack(Items.COAL, 1, 0));
 		OreDictionary.registerOre("charcoal", new ItemStack(Items.COAL, 1, 1));
 		
 		OreDictionary.registerOre("blockCoal", Blocks.COAL_BLOCK);
+		
 		
 		proxy.preInit();
 	}
@@ -91,6 +110,7 @@ public class Wings {
 		ConverterRecipes.registerFluid("fuel", 750);
 		ConverterRecipes.registerFluid("gasoline", 750);
 		ConverterRecipes.registerFluid("pyrotheum", 640);
+		ConverterRecipes.registerFluid("aerotheum", 800);
 		ConverterRecipes.registerFluid("crude_oil", 350);
 		ConverterRecipes.registerFluid("tree_oil", 250);
 		ConverterRecipes.registerFluid("creosote", 100);
@@ -113,6 +133,7 @@ public class Wings {
 		ConverterRecipes.registerItem("plankWood", 2);
 		ConverterRecipes.registerItem("logWood", 10);
 		ConverterRecipes.registerItem("dustPyrotheum", 160);
+		ConverterRecipes.registerItem("dustAerotheum", 200);
 	}
 	
 	@EventHandler
@@ -192,6 +213,13 @@ public class Wings {
 				.setRegistryName("goggles"));
 		
 		e.getRegistry().register(new ItemBlock(CONVERTER).setRegistryName("converter"));
+	}
+	
+	@SubscribeEvent
+	public void onPlayerTick(PlayerTickEvent e) {
+		if (e.phase == Phase.END) {
+			WingsPlayer.getIfExists(e.player).ifPresent(WingsPlayer::update);
+		}
 	}
 	
 }

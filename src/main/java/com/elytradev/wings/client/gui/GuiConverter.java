@@ -1,16 +1,14 @@
 package com.elytradev.wings.client.gui;
 
+import com.elytradev.wings.client.ClientProxy;
 import com.elytradev.wings.inventory.ContainerConverter;
 import com.elytradev.wings.tile.TileEntityConverter;
 import com.google.common.collect.Lists;
 
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidTank;
@@ -95,30 +93,12 @@ public class GuiConverter extends GuiContainer {
 		} else {
 			int yc = y+h;
 			for (int i = 0; i < fullSquares; i++) {
-				drawRect(x, yc-16, tex, 16, 16, false);
+				ClientProxy.drawRect(x, yc-16, tex, 16, 16, false);
 				yc -= 16;
 			}
 			int lastHeight = fh%16;
-			drawRect(x, yc-lastHeight, tex, 16, lastHeight, true);
+			ClientProxy.drawRect(x, yc-lastHeight, tex, 16, lastHeight, true);
 		}
-	}
-
-	private void drawRect(int x, int y, TextureAtlasSprite tex, int w, int h, boolean flipped) {
-		Tessellator tess = Tessellator.getInstance();
-		BufferBuilder bb = tess.getBuffer();
-		
-		float minU = tex.getInterpolatedU(0);
-		float maxU = tex.getInterpolatedU(w);
-		
-		float minV = tex.getInterpolatedV(flipped ? h : 0);
-		float maxV = tex.getInterpolatedV(flipped ? 0 : h);
-		
-		bb.begin(7, DefaultVertexFormats.POSITION_TEX);
-		bb.pos(x + 0, y + h, zLevel).tex(minU, maxV).endVertex();
-		bb.pos(x + w, y + h, zLevel).tex(maxU, maxV).endVertex();
-		bb.pos(x + w, y + 0, zLevel).tex(maxU, minV).endVertex();
-		bb.pos(x + 0, y + 0, zLevel).tex(minU, minV).endVertex();
-		tess.draw();
 	}
 
 }

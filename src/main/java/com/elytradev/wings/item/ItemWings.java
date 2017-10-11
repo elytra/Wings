@@ -79,5 +79,15 @@ public abstract class ItemWings extends ItemArmor {
 	public boolean hasThruster() {
 		return false;
 	}
+
+	/**
+	 * Burn N units of fuel. The input amount does not need to directly map to
+	 * an amount of fuel consumed by the implementation.
+	 * @param stack The stack to affect
+	 * @param amt The amount of fuel units to burn
+	 * @param simulate If {@code true}, just check if enough fuel is present, and don't burn it
+	 * @return {@code true} if enough fuel was present (and burned, if simulate was false), {@code false} otherwise
+	 */
+	public boolean burnFuel(ItemStack stack, int amt, boolean simulate) { return false; }
 	
 }

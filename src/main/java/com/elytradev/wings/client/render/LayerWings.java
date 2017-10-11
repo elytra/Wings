@@ -64,11 +64,16 @@ public class LayerWings implements LayerRenderer<EntityLivingBase> {
 			forward = forward.subtract(0, forward.y, 0).normalize();
 			Vec3d motion = new Vec3d(elb.motionX, 0, elb.motionZ).normalize();
 			
-			double speed = MathHelper.sqrt(Math.abs(elb.motionX * elb.motionX) + Math.abs(elb.motionZ * elb.motionZ));
-			speed *= motion.dotProduct(forward);
-			if (speed > 0.5) speed = 0.5;
-			
-			float rot = 15f+(float)(speed*180f);
+			float rot;
+			if (elb.isElytraFlying()) {
+				rot = 10;
+			} else {
+				double speed = MathHelper.sqrt(Math.abs(elb.motionX * elb.motionX) + Math.abs(elb.motionZ * elb.motionZ));
+				speed *= motion.dotProduct(forward);
+				if (speed > 0.5) speed = 0.5;
+				
+				rot = 15f+(float)(speed*180f);
+			}
 			
 			drawWings(is, rot);
 

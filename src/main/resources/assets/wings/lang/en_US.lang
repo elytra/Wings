@@ -36,3 +36,5 @@ key.wings.pitchDown=Pitch Down
 
 key.wings.turnLeft=Turn Left
 key.wings.turnRight=Turn Right
+
+multiplayer.disconnect.wings.invalid_roll=Illegal roll

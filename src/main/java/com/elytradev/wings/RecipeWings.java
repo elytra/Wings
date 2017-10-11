@@ -40,7 +40,6 @@ public class RecipeWings extends ShapedOreRecipe {
 
 	@Override
 	public ItemStack getCraftingResult(InventoryCrafting inv) {
-		System.out.println("yo");
 		ItemStack leftBanner = null;
 		ItemStack rightBanner = null;
 		ItemStack previousWings = null;
@@ -60,9 +59,6 @@ public class RecipeWings extends ShapedOreRecipe {
 				break;
 			}
 		}
-		System.out.println(leftBanner);
-		System.out.println(rightBanner);
-		System.out.println(previousWings);
 		if (previousWings == null && (leftBanner == null || rightBanner == null)) {
 			log.error("Not enough banners in wing recipe, returning dirt");
 			return new ItemStack(Blocks.DIRT);
@@ -77,9 +73,17 @@ public class RecipeWings extends ShapedOreRecipe {
 			if (leftBanner.hasTagCompound()) {
 				NBTTagCompound nbt = leftBanner.getTagCompound().getCompoundTag("BlockEntityTag");
 				out.getTagCompound().setTag("LeftWing", nbt);
+			} else {
+				NBTTagCompound nbt = new NBTTagCompound();
+				nbt.setByte("Base", (byte)leftBanner.getMetadata());
+				out.getTagCompound().setTag("LeftWing", nbt);
 			}
 			if (rightBanner.hasTagCompound()) {
 				NBTTagCompound nbt = rightBanner.getTagCompound().getCompoundTag("BlockEntityTag");
+				out.getTagCompound().setTag("RightWing", nbt);
+			} else {
+				NBTTagCompound nbt = new NBTTagCompound();
+				nbt.setByte("Base", (byte)rightBanner.getMetadata());
 				out.getTagCompound().setTag("RightWing", nbt);
 			}
 		}
