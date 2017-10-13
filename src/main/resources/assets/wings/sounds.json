@@ -1,0 +1,15 @@
+{
+	"sonic_boom": {
+		"sounds": [ "wings:sonic_boom" ],
+		"subtitle": "subtitles.wings.sonic_boom"
+	},
+	"afterburner": {
+		"sounds": [ "wings:afterburner" ]
+	},
+	"afterburner_start": {
+		"sounds": [ "wings:afterburner_start" ]
+	},
+	"thrust": {
+		"sounds": [ "wings:thrust" ]
+	}
+}

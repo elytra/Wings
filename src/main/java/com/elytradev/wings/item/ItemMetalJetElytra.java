@@ -157,14 +157,17 @@ public class ItemMetalJetElytra extends ItemWings {
 		int mbAmt = amt;
 		FluidStack res = tank.drain(mbAmt, true);
 		if (res == null || res.amount != mbAmt) {
-			Wings.log.info("Not enough fuel (wanted {}, got {})", mbAmt, res == null ? 0 : res.amount);
 			return false;
 		}
 		if (!simulate) {
 			setFluidContents(stack, tank);
-			Wings.log.info("Burned {} mB of jet fuel", mbAmt);
 		}
 		return true;
+	}
+	
+	@Override
+	public boolean isFuelDepleted(ItemStack stack) {
+		return getFluidContents(stack).getFluidAmount() < 5;
 	}
 	
 }

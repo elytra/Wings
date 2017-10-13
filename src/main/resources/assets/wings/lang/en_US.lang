@@ -38,3 +38,10 @@ key.wings.turnLeft=Turn Left
 key.wings.turnRight=Turn Right
 
 multiplayer.disconnect.wings.invalid_roll=Illegal roll
+
+hud.wings.thruster.afterburner=Thrust: §cAFTERBURNER
+hud.wings.thruster=Thrust: §e%s%%
+hud.wings.thruster.off=Thrust: §4OFF
+hud.wings.thruster.no_fuel=Thrust: §8NO FUEL
+
+subtitles.wings.sonic_boom=Sonic boom

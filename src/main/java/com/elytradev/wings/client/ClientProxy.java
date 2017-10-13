@@ -1,29 +1,42 @@
 package com.elytradev.wings.client;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 
 import com.elytradev.concrete.reflect.accessor.Accessor;
 import com.elytradev.concrete.reflect.accessor.Accessors;
+import com.elytradev.concrete.reflect.invoker.Invoker;
+import com.elytradev.concrete.reflect.invoker.Invokers;
 import com.elytradev.wings.WingsPlayer;
 import com.elytradev.wings.Proxy;
 import com.elytradev.wings.Wings;
 import com.elytradev.wings.WingsPlayer.FlightState;
 import com.elytradev.wings.client.key.KeyBindingAdvanced;
+import com.elytradev.wings.client.key.KeyBindingAdvancedWheel;
 import com.elytradev.wings.client.key.KeyEntryAdvanced;
 import com.elytradev.wings.client.render.LayerWings;
 import com.elytradev.wings.client.render.WingsTileEntityItemStackRenderer;
+import com.elytradev.wings.client.sound.AfterburnerStartSound;
+import com.elytradev.wings.client.sound.FollowingSonicBoomSound;
+import com.elytradev.wings.client.sound.ThrusterSound;
 import com.elytradev.wings.item.ItemWings;
 import com.elytradev.wings.network.SetFlightStateMessage;
 import com.elytradev.wings.network.SetThrusterMessage;
+import com.google.common.collect.Lists;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.SoundHandler;
+import net.minecraft.client.audio.SoundManager;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiControls;
 import net.minecraft.client.gui.GuiKeyBindingList;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiKeyBindingList.KeyEntry;
 import net.minecraft.client.gui.GuiListExtended.IGuiListEntry;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -37,6 +50,8 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
@@ -44,9 +59,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.client.ForgeHooksClient;
+import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
+import net.minecraftforge.client.event.EntityViewRenderEvent.FOVModifier;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderSpecificHandEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.client.settings.IKeyConflictContext;
@@ -61,31 +79,35 @@ import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
+import paulscode.sound.SoundSystem;
 
 public class ClientProxy extends Proxy {
 
-	private KeyBinding TOGGLE_ADVANCED;
-	private KeyBinding ROLL_CCW;
-	private KeyBinding ROLL_CW;
+	private KeyBinding keyToggleAdvanced;
+	private KeyBinding keyRollCounterclockwise;
+	private KeyBinding keyRollClockwise;
 	
-	private KeyBinding TOGGLE_THRUSTER;
-	private KeyBinding AFTERBURNER;
+	private KeyBinding keyToggleThruster;
+	private KeyBinding keyAfterburner;
 	
-	private KeyBinding THROTTLE_UP;
-	private KeyBinding THROTTLE_DOWN;
+	private KeyBinding keyThrottleUp;
+	private KeyBinding keyThrottleDown;
 	
-	private KeyBinding BRAKE;
+	private KeyBinding keyBrake;
 	
-	private KeyBinding PITCH_UP;
-	private KeyBinding PITCH_DOWN;
+	private KeyBinding keyPitchUp;
+	private KeyBinding keyPitchDown;
 	
-	private KeyBinding TURN_LEFT;
-	private KeyBinding TURN_RIGHT;
+	private KeyBinding keyTurnLeft;
+	private KeyBinding keyTurnRight;
+	
+	public static List<KeyBinding> advancedFlightKeybinds = Lists.newArrayList();
 	
 	private IKeyConflictContext ADVANCED_FLIGHT_KCC = new IKeyConflictContext() {
 		
 		@Override
 		public boolean isActive() {
+			if (Minecraft.getMinecraft().currentScreen != null) return false;
 			if (Minecraft.getMinecraft().player != null) {
 				return WingsPlayer.get(Minecraft.getMinecraft().player).flightState == FlightState.FLYING_ADVANCED;
 			}
@@ -129,43 +151,42 @@ public class ClientProxy extends Proxy {
 		String catF = cat+".advanced";
 		String catFM = catF+".movement";
 		
-		ClientRegistry.registerKeyBinding(TOGGLE_ADVANCED = new KeyBinding("key.wings.toggleAdvanced", KeyConflictContext.IN_GAME, Keyboard.KEY_Z, cat));
+		ClientRegistry.registerKeyBinding(keyToggleAdvanced = new KeyBinding("key.wings.toggleAdvanced", KeyConflictContext.IN_GAME, Keyboard.KEY_Z, cat));
 		
 		
-		ClientRegistry.registerKeyBinding(TOGGLE_THRUSTER = new KeyBindingAdvanced("key.wings.toggleThruster", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LCONTROL, catF));
-		ClientRegistry.registerKeyBinding(AFTERBURNER = new KeyBindingAdvanced("key.wings.afterburner", ADVANCED_FLIGHT_KCC, Keyboard.KEY_SPACE, catF));
+		ClientRegistry.registerKeyBinding(keyToggleThruster = new KeyBindingAdvanced("key.wings.toggleThruster", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LCONTROL, catF));
+		ClientRegistry.registerKeyBinding(keyAfterburner = new KeyBindingAdvanced("key.wings.afterburner", ADVANCED_FLIGHT_KCC, Keyboard.KEY_SPACE, catF));
 		
-		ClientRegistry.registerKeyBinding(THROTTLE_UP = new KeyBindingAdvanced("key.wings.throttleUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF) {
-			@Override
-			public String getDisplayName() {
-				if (getKeyCode() == Keyboard.KEY_NONE) {
-					return "Wheel Up";
-				}
-				return super.getDisplayName();
-			}
-		});
-		ClientRegistry.registerKeyBinding(THROTTLE_DOWN = new KeyBindingAdvanced("key.wings.throttleDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF) {
-			@Override
-			public String getDisplayName() {
-				if (getKeyCode() == Keyboard.KEY_NONE) {
-					return "Wheel Down";
-				}
-				return super.getDisplayName();
-			}
+		ClientRegistry.registerKeyBinding(keyThrottleUp = new KeyBindingAdvancedWheel("key.wings.throttleUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF, true));
+		ClientRegistry.registerKeyBinding(keyThrottleDown = new KeyBindingAdvancedWheel("key.wings.throttleDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF, false));
+		
+		ClientRegistry.registerKeyBinding(keyBrake = new KeyBindingAdvanced("key.wings.brake", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LSHIFT, catFM));
+		
+		ClientRegistry.registerKeyBinding(keyRollCounterclockwise = new KeyBindingAdvanced("key.wings.rollCCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_Q, catFM));
+		ClientRegistry.registerKeyBinding(keyRollClockwise = new KeyBindingAdvanced("key.wings.rollCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_E, catFM));
+		
+		ClientRegistry.registerKeyBinding(keyPitchUp = new KeyBindingAdvanced("key.wings.pitchUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_W, catFM));
+		ClientRegistry.registerKeyBinding(keyPitchDown = new KeyBindingAdvanced("key.wings.pitchDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_S, catFM));
+		
+		ClientRegistry.registerKeyBinding(keyTurnLeft = new KeyBindingAdvanced("key.wings.turnLeft", ADVANCED_FLIGHT_KCC, Keyboard.KEY_A, catFM));
+		ClientRegistry.registerKeyBinding(keyTurnRight = new KeyBindingAdvanced("key.wings.turnRight", ADVANCED_FLIGHT_KCC, Keyboard.KEY_D, catFM));
+		
+		GameSettings gm = Minecraft.getMinecraft().gameSettings;
+		
+		// KeyBindingAdvanced instances are implicitly added to this list
+		// We only need to add exceptions to our "eat all other keybinds" rule
+		
+		advancedFlightKeybinds.add(keyToggleAdvanced);
+		
+		advancedFlightKeybinds.add(gm.keyBindAttack);
+		advancedFlightKeybinds.add(gm.keyBindChat);
+		advancedFlightKeybinds.add(gm.keyBindCommand);
+		advancedFlightKeybinds.add(gm.keyBindScreenshot);
+		advancedFlightKeybinds.add(gm.keyBindPlayerList);
+		advancedFlightKeybinds.add(gm.keyBindTogglePerspective);
+		advancedFlightKeybinds.add(gm.keyBindUseItem);
+		advancedFlightKeybinds.add(gm.keyBindSmoothCamera);
 			
-		});
-		
-		ClientRegistry.registerKeyBinding(BRAKE = new KeyBindingAdvanced("key.wings.brake", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LSHIFT, catFM));
-		
-		ClientRegistry.registerKeyBinding(ROLL_CCW = new KeyBindingAdvanced("key.wings.rollCCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_Q, catFM));
-		ClientRegistry.registerKeyBinding(ROLL_CW = new KeyBindingAdvanced("key.wings.rollCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_E, catFM));
-		
-		ClientRegistry.registerKeyBinding(PITCH_UP = new KeyBindingAdvanced("key.wings.pitchUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_W, catFM));
-		ClientRegistry.registerKeyBinding(PITCH_DOWN = new KeyBindingAdvanced("key.wings.pitchDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_S, catFM));
-		
-		ClientRegistry.registerKeyBinding(TURN_LEFT = new KeyBindingAdvanced("key.wings.turnLeft", ADVANCED_FLIGHT_KCC, Keyboard.KEY_A, catFM));
-		ClientRegistry.registerKeyBinding(TURN_RIGHT = new KeyBindingAdvanced("key.wings.turnRight", ADVANCED_FLIGHT_KCC, Keyboard.KEY_D, catFM));
-		
 		MinecraftForge.EVENT_BUS.register(this);
 	}
 	
@@ -196,17 +217,39 @@ public class ClientProxy extends Proxy {
 		}
 	}
 	
+	private final Invoker processKeyF3 = Invokers.findMethod(Minecraft.class, "processKeyF3", "func_184122_c", int.class);
+	private final Invoker processKeyBinds = Invokers.findMethod(Minecraft.class, "processKeyBinds", "func_184117_aA");
+	
+	private final Accessor<Boolean> pressed = Accessors.findField(KeyBinding.class, "field_74513_e", "pressed");
+	private final Accessor<Integer> pressTime = Accessors.findField(KeyBinding.class, "field_151474_i", "pressTime");
+	private final Accessor<Map<String, KeyBinding>> KEYBIND_ARRAY = Accessors.findField(KeyBinding.class, "field_74516_a", "KEYBIND_ARRAY");
+	
+	private final Accessor<SoundManager> sndManager = Accessors.findField(SoundHandler.class, "field_147694_f", "sndManager");
+	private final Accessor<SoundSystem> sndSystem = Accessors.findField(SoundManager.class, "field_148620_e", "sndSystem");
+	
+	private boolean actionKeyF3 = false;
+	
 	private boolean jumpTainted = false;
 	private boolean lastOnGround = false;
-	private boolean lastToggleAdvancedDown = false;
 	private FlightState lastFlightState = FlightState.NONE;
 	private int flightTicks = 0;
 	private int advancedFlightTicks = 0;
 	private IFluidTankProperties[] lastTickFluidProperties = null;
 	
+	private boolean wheelUp;
+	private boolean wheelDown;
+	
+	private float oldThrusterValue;
+	
 	@SubscribeEvent
 	public void onClientTick(ClientTickEvent e) {
 		if (e.phase == Phase.START) {
+			if (lastFlightState == FlightState.FLYING_ADVANCED) {
+				// handle the events ourselves to suppress unwanted "universal" keybinds
+				processKeyboard();
+				processMouse();
+			}
+		} else if (e.phase == Phase.END) {
 			Minecraft mc = Minecraft.getMinecraft();
 			EntityPlayerSP ep = mc.player;
 			if (ep != null) {
@@ -220,24 +263,25 @@ public class ClientProxy extends Proxy {
 					flightTicks--;
 				}
 				
+				if (lastFlightState == FlightState.FLYING_ADVANCED) {
+					advancedFlightTicks++;
+				} else if (advancedFlightTicks > 10) {
+					advancedFlightTicks = 10;
+				} else if (advancedFlightTicks > 0) {
+					advancedFlightTicks--;
+				}
+				
 				WingsPlayer wp = WingsPlayer.get(ep);
 				FlightState newState;
 				if (chest.getItem() instanceof ItemWings) {
 					ItemWings wings = (ItemWings)chest.getItem();
 					
-					if (lastFlightState == FlightState.FLYING_ADVANCED) {
-						advancedFlightTicks++;
-					} else if (advancedFlightTicks > 10) {
-						advancedFlightTicks = 10;
-					} else if (advancedFlightTicks > 0) {
-						advancedFlightTicks--;
-					}
-					
 					if (!mc.gameSettings.keyBindJump.isKeyDown()) {
 						jumpTainted = false;
 					}
 					if (mc.gameSettings.keyBindJump.isKeyDown() && !jumpTainted && lastFlightState == FlightState.NONE) {
-						if (!ep.onGround && ep.motionY < 0) {
+						if (!ep.onGround && ep.motionY < 0 && !ep.isInWater()) {
+							Minecraft.getMinecraft().getSoundHandler().playSound(new ThrusterSound(ep));
 							newState = FlightState.FLYING;
 						} else {
 							newState = lastFlightState;
@@ -246,48 +290,253 @@ public class ClientProxy extends Proxy {
 					} else {
 						newState = lastFlightState;
 					}
-					if (ep.onGround && !lastOnGround) {
+					if (newState == FlightState.FLYING && ep.onGround && !lastOnGround) {
 						newState = FlightState.NONE;
 					}
-					if (TOGGLE_ADVANCED.isKeyDown()) {
-						if (!lastToggleAdvancedDown) {
-							if (newState == FlightState.FLYING) {
-								newState = FlightState.FLYING_ADVANCED;
-							} else if (newState == FlightState.FLYING_ADVANCED) {
-								newState = FlightState.FLYING;
-							}
-						}
-						lastToggleAdvancedDown = true;
-					} else {
-						lastToggleAdvancedDown = false;
-					}
-					if (newState == FlightState.FLYING && wings.hasThruster()) {
-						boolean jump = mc.gameSettings.keyBindJump.isKeyDown();
-						boolean sneak = mc.gameSettings.keyBindSneak.isKeyDown();
-						if (jump && !wp.afterburner && !wp.brake) {
-							wp.afterburner = true;
-							new SetThrusterMessage(SetThrusterMessage.AFTERBURNER_SPEED).sendToServer();
-						} else if (!jump && wp.afterburner) {
+					if (keyToggleAdvanced.isPressed()) {
+						if (newState == FlightState.FLYING) {
+							wp.thruster = 0.5f;
 							wp.afterburner = false;
-							new SetThrusterMessage(0).sendToServer();
-						} else if (sneak && !wp.brake && !wp.afterburner) {
-							wp.brake = true;
-							new SetThrusterMessage(SetThrusterMessage.BRAKE_SPEED).sendToServer();
-						} else if (!sneak && wp.brake) {
 							wp.brake = false;
-							new SetThrusterMessage(0).sendToServer();
+							oldThrusterValue = 0;
+							newState = FlightState.FLYING_ADVANCED;
+							new SetThrusterMessage(0.5f).sendToServer();
+						} else if (newState == FlightState.FLYING_ADVANCED) {
+							wp.thruster = 0;
+							newState = FlightState.FLYING;
+						}
+					}
+					if (wings.hasThruster()) {
+						if (newState == FlightState.FLYING) {
+							boolean jump = mc.gameSettings.keyBindJump.isKeyDown();
+							boolean sneak = mc.gameSettings.keyBindSneak.isKeyDown();
+							if (jump && !wp.afterburner && !wp.brake) {
+								wp.afterburner = true;
+								wp.thruster = 0.6f; // for thruster sound
+								new SetThrusterMessage(SetThrusterMessage.AFTERBURNER_SPEED).sendToServer();
+							} else if (!jump && wp.afterburner) {
+								wp.afterburner = false;
+								wp.thruster = 0; // for thruster sound
+								new SetThrusterMessage(0).sendToServer();
+							} else if (sneak && !wp.brake && !wp.afterburner) {
+								wp.brake = true;
+								new SetThrusterMessage(SetThrusterMessage.BRAKE_SPEED).sendToServer();
+							} else if (!sneak && wp.brake) {
+								wp.brake = false;
+								new SetThrusterMessage(0).sendToServer();
+							}
+						} else if (newState == FlightState.FLYING_ADVANCED) {
+							if (wheelDown || keyThrottleDown.isKeyDown()) {
+								wp.thruster -= 0.05f;
+								if (wp.thruster < 0) {
+									wp.thruster = 0;
+								}
+							}
+							
+							if (wheelUp || keyThrottleDown.isKeyDown()) {
+								wp.thruster += 0.05f;
+								if (wp.thruster > 1) {
+									wp.thruster = 1;
+								}
+							}
+							
+							wp.afterburner = keyAfterburner.isKeyDown();
+							wp.brake = keyBrake.isKeyDown();
+							
+							if (wp.afterburner && !wp.lastTickAfterburner) {
+								mc.getSoundHandler().playSound(new AfterburnerStartSound(ep));
+							}
+							if (wp.sonicBoom && !wp.lastTickSonicBoom) {
+								mc.getSoundHandler().playSound(new FollowingSonicBoomSound(ep));
+							}
+							
+							wheelUp = false;
+							wheelDown = false;
+							
+							if (keyToggleThruster.isPressed()) {
+								float newOld = wp.thruster;
+								wp.thruster = oldThrusterValue;
+								oldThrusterValue = newOld;
+							}
+							
+							if (wp.thruster != wp.lastTickThruster ||
+									wp.afterburner != wp.lastTickAfterburner ||
+									wp.brake != wp.lastTickBrake) {
+								if (wp.afterburner) {
+									new SetThrusterMessage(SetThrusterMessage.AFTERBURNER_SPEED).sendToServer();
+								} else if (wp.brake) {
+									new SetThrusterMessage(SetThrusterMessage.BRAKE_SPEED).sendToServer();
+								} else {
+									new SetThrusterMessage(wp.thruster).sendToServer();
+								}
+							}
 						}
 					}
 					lastOnGround = mc.player.onGround;
 				} else {
 					newState = FlightState.NONE;
 				}
+				if (newState == FlightState.FLYING_ADVANCED) {
+					if (keyRollClockwise.isKeyDown()) {
+						wp.rotationRoll += 4.5f;
+					}
+					if (keyRollCounterclockwise.isKeyDown()) {
+						wp.rotationRoll -= 4.5f;
+					}
+				}
 				if (newState != lastFlightState) {
+					if (newState == FlightState.FLYING_ADVANCED) {
+						// prevent keys sticking from our input overrides
+						for (KeyBinding kb : KEYBIND_ARRAY.get(null).values()) {
+							if (!advancedFlightKeybinds.contains(kb)) {
+								pressed.set(kb, false);
+								pressTime.set(kb, 0);
+							}
+						}
+					}
 					lastFlightState = newState;
 					wp.flightState = newState;
 					new SetFlightStateMessage(newState).sendToServer();
 				}
 			}
+		}
+	}
+	
+	private void processMouse() {
+		Minecraft mc = Minecraft.getMinecraft();
+		while (Mouse.next()) {
+			if (mc.currentScreen != null) {
+				try {
+					mc.currentScreen.handleMouseInput();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				continue;
+			}
+			int dwheel = Mouse.getEventDWheel();
+			if (dwheel != 0) {
+				if (dwheel > 0 && keyThrottleUp.getKeyCode() == Keyboard.KEY_NONE) {
+					wheelUp = true;
+				}
+				if (dwheel < 0 && keyThrottleDown.getKeyCode() == Keyboard.KEY_NONE) {
+					wheelDown = true;
+				}
+			}
+			int button = Mouse.getEventButton();
+			boolean state = Mouse.getEventButtonState();
+			setAdvancedButtonsPressed(button-100, state);
+			if (!mc.inGameHasFocus && state) {
+				mc.setIngameFocus();
+			}
+			if (state) {
+			}
+		}
+	}
+	
+	private void processKeyboard() {
+		Minecraft mc = Minecraft.getMinecraft();
+		while (Keyboard.next()) {
+			int keyCode = Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey();
+
+			mc.dispatchKeypresses();
+
+			// we don't want to mess up GUIs
+			if (mc.currentScreen != null) {
+				try {
+					mc.currentScreen.handleKeyboardInput();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				continue;
+			}
+			
+			boolean press = Keyboard.getEventKeyState();
+
+			if (press) {
+				if (keyCode == Keyboard.KEY_F4 && mc.entityRenderer != null) {
+					mc.entityRenderer.switchUseShader();
+				}
+
+				boolean f3 = false;
+
+				if (mc.currentScreen == null) {
+					if (keyCode == Keyboard.KEY_ESCAPE) {
+						mc.displayInGameMenu();
+					}
+
+					f3 = Keyboard.isKeyDown(Keyboard.KEY_F3) && (Boolean)processKeyF3.invoke(mc, keyCode);
+					actionKeyF3 |= f3;
+
+					if (keyCode == Keyboard.KEY_F1) {
+						mc.gameSettings.hideGUI = !mc.gameSettings.hideGUI;
+					}
+				}
+
+				if (f3) {
+					setAdvancedButtonsPressed(keyCode, false);
+				} else {
+					setAdvancedButtonsPressed(keyCode, true);
+				}
+			} else {
+				setAdvancedButtonsPressed(keyCode, false);
+
+				if (keyCode == Keyboard.KEY_F3) {
+					if (actionKeyF3) {
+						actionKeyF3 = false;
+					} else {
+						mc.gameSettings.showDebugInfo = !mc.gameSettings.showDebugInfo;
+						mc.gameSettings.showDebugProfilerChart = mc.gameSettings.showDebugInfo && GuiScreen.isShiftKeyDown();
+						mc.gameSettings.showLagometer = mc.gameSettings.showDebugInfo && GuiScreen.isAltKeyDown();
+					}
+				}
+			}
+			
+			processKeyBinds.invoke(mc);
+		}
+	}
+	
+	private void setAdvancedButtonsPressed(int keyCode, boolean state) {
+		for (KeyBinding kb : advancedFlightKeybinds) {
+			if (keyCode == kb.getKeyCode() && kb.getKeyModifier().isActive(null)) {
+				pressed.set(kb, state);
+				if (state) {
+					pressTime.set(kb, pressTime.get(kb) + 1);
+					System.out.println(pressTime.get(kb));
+				}
+			}
+		}
+	}
+	
+	@SubscribeEvent
+	public void onRenderHand(RenderSpecificHandEvent e) {
+		if (advancedFlightTicks > 10) {
+			e.setCanceled(true);
+		} else if (advancedFlightTicks > 0) {
+			float interp = interpolateEase(advancedFlightTicks, 10, e.getPartialTicks(), lastFlightState == FlightState.FLYING_ADVANCED);
+			GlStateManager.translate(0, -interp/2, 0);
+		}
+	}
+	
+	@SubscribeEvent
+	public void onFOV(FOVModifier e) {
+		if (lastFlightState != FlightState.NONE) {
+			EntityPlayerSP player = Minecraft.getMinecraft().player;
+			WingsPlayer wp = WingsPlayer.get(player);
+			if (wp.sonicBoom) {
+				e.setFOV(e.getFOV()*1.75f);
+			} else {
+				float speed = (float)Math.sqrt((player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ));
+				speed /= WingsPlayer.SOUND_BARRIER;
+				e.setFOV(e.getFOV()*(1+(speed/2)));
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public void onCameraSetup(CameraSetup e) {
+		if (lastFlightState == FlightState.FLYING_ADVANCED) {
+			WingsPlayer wp = WingsPlayer.get(Minecraft.getMinecraft().player);
+			e.setRoll(wp.lastTickRotationRoll + (wp.rotationRoll-wp.lastTickRotationRoll)*(float)e.getRenderPartialTicks());
 		}
 	}
 	
@@ -306,7 +555,7 @@ public class ClientProxy extends Proxy {
 					GlStateManager.pushMatrix();
 					GlStateManager.translate(0, interp*23, 0);
 				}
-			} else if (e.getType() == ElementType.ARMOR || e.getType() == ElementType.EXPERIENCE || e.getType() == ElementType.FOOD || e.getType() == ElementType.HEALTH) {
+			} else if (e.getType() == ElementType.ARMOR || e.getType() == ElementType.EXPERIENCE || e.getType() == ElementType.FOOD || e.getType() == ElementType.HEALTH || e.getType() == ElementType.AIR) {
 				GlStateManager.pushMatrix();
 				GlStateManager.translate(0, interp*23, 0);
 			} else {
@@ -323,27 +572,17 @@ public class ClientProxy extends Proxy {
 		if (e.getType() == ElementType.HOTBAR) {
 			
 		} else if (e.getType() == ElementType.ALL) {
+			EntityPlayerSP ep = Minecraft.getMinecraft().player;
+			WingsPlayer wp = WingsPlayer.get(ep);
+			ItemStack chest = ep.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
+			int y = 5;
 			if (flightTicks > 0) {
-				EntityPlayerSP ep = Minecraft.getMinecraft().player;
-				ItemStack chest = ep.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
 				double mY = ep.onGround ? 0 : ep.motionY;
 				double speed = ep.motionX * ep.motionX + mY * mY + ep.motionZ * ep.motionZ;
 				speed = MathHelper.sqrt(speed);
-				speed /= 20;
-				speed *= 3600;
+				speed *= 72;
 				
-				float interp;
-				if (flightTicks < 9) {
-					float partial = e.getPartialTicks();
-					if (lastFlightState == FlightState.NONE) {
-						partial *= -1;
-					}
-					interp = MathHelper.sin((Math.min(flightTicks+partial, 10)/20f)*((float)Math.PI));
-				} else {
-					interp = 1;
-				}
-				
-				int y = 5;
+				float interp = interpolateEase(flightTicks, 10, e.getPartialTicks(), lastFlightState != FlightState.NONE);
 				
 				if (chest.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null)) {
 					IFluidHandlerItem ifhi = chest.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null);
@@ -355,8 +594,8 @@ public class ClientProxy extends Proxy {
 					for (int i = 0; i < props.length; i++) {
 						IFluidTankProperties prop = props[i];
 						IFluidTankProperties lastTickProp = lastTickFluidProperties != null && lastTickFluidProperties.length == props.length ? lastTickFluidProperties[i] : null;
-						Gui.drawRect(x+4, y-1, x+w+6, y+11, 0xFF880000);
-						Gui.drawRect(x+5, y, x+w+5, y+10, 0xFF222222);
+						Gui.drawRect(x+4, y, x+w+6, y+12, 0xFF880000);
+						Gui.drawRect(x+5, y+1, x+w+5, y+11, 0xFF222222);
 						FluidStack content = prop.getContents();
 						FluidStack lastTick = lastTickProp == null ? null : lastTickProp.getContents();
 						if (content != null || lastTick != null) {
@@ -372,14 +611,14 @@ public class ClientProxy extends Proxy {
 							int full = (int)(px/16);
 							GlStateManager.color(1, 1, 1);
 							for (int j = 0; j < full; j++) {
-								drawRect(x+5+(j*16), y, tas, 16, 10, false);
+								drawTexturedRect(x+5+(j*16), y+1, tas, 16, 10, false);
 							}
-							drawRect(x+5+(full*16), y, tas, px-(full*16), 10, false);
+							drawTexturedRect(x+5+(full*16), y+1, tas, px-(full*16), 10, false);
 						}
-						Gui.drawRect(x+5+(w/4), y-1, x+(w/4)+6, y+4, 0xFF880000);
-						Gui.drawRect(x+5+(w/2), y-1, x+(w/2)+6, y+8, 0xFF880000);
-						Gui.drawRect(x+5+((w/4)*3), y-1, x+((w/4)*3)+6, y+4, 0xFF880000);
-						y += 18;
+						Gui.drawRect(x+5+(w/4), y, x+(w/4)+6, y+5, 0xFF880000);
+						Gui.drawRect(x+5+(w/2), y, x+(w/2)+6, y+9, 0xFF880000);
+						Gui.drawRect(x+5+((w/4)*3), y, x+((w/4)*3)+6, y+5, 0xFF880000);
+						y += 16;
 					}
 					lastTickFluidProperties = props.clone();
 					for (int i = 0; i < lastTickFluidProperties.length; i++) {
@@ -394,12 +633,47 @@ public class ClientProxy extends Proxy {
 				int w = fr.getStringWidth(str);
 				GlStateManager.translate(interp*(w+5), 0, 0);
 				fr.drawStringWithShadow(str, -w, y, -1);
+				y += 12;
+				GlStateManager.popMatrix();
+			}
+			if (advancedFlightTicks > 0) {
+				float interp = interpolateEase(advancedFlightTicks, 10, e.getPartialTicks(), lastFlightState == FlightState.FLYING_ADVANCED);
+				
+				GlStateManager.pushMatrix();
+				FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
+				String str;
+				if (chest.getItem() instanceof ItemWings && ((ItemWings)chest.getItem()).isFuelDepleted(chest)) {
+					str = I18n.format("hud.wings.thruster.no_fuel");
+				} else if (wp.afterburner) {
+					str = I18n.format("hud.wings.thruster.afterburner");
+				} else if (wp.thruster > 0) {
+					str = I18n.format("hud.wings.thruster", Math.round(wp.thruster*100));
+				} else {
+					str = I18n.format("hud.wings.thruster.off");
+				}
+				int w = fr.getStringWidth(str);
+				GlStateManager.translate(interp*(w+5), 0, 0);
+				fr.drawStringWithShadow(str, -w, y, -1);
+				y += 12;
 				GlStateManager.popMatrix();
 			}
 		}
 	}
 
-	public static void drawRect(double x, double y, TextureAtlasSprite tex, double w, double h, boolean flipped) {
+	private static final float PIf = (float)Math.PI;
+	
+	private float interpolateEase(int ticks, int length, float partialTicks, boolean direction) {
+		if (ticks < length) {
+			if (!direction) {
+				partialTicks *= -1;
+			}
+			return MathHelper.sin((Math.min(ticks+partialTicks, length)/(length*2))*PIf);
+		} else {
+			return 1;
+		}
+	}
+
+	public static void drawTexturedRect(double x, double y, TextureAtlasSprite tex, double w, double h, boolean flipped) {
 		Tessellator tess = Tessellator.getInstance();
 		BufferBuilder bb = tess.getBuffer();
 		

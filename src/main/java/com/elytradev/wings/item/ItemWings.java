@@ -89,5 +89,7 @@ public abstract class ItemWings extends ItemArmor {
 	 * @return {@code true} if enough fuel was present (and burned, if simulate was false), {@code false} otherwise
 	 */
 	public boolean burnFuel(ItemStack stack, int amt, boolean simulate) { return false; }
+
+	public boolean isFuelDepleted(ItemStack stack) { return true; }
 	
 }

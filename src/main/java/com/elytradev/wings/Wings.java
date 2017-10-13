@@ -25,6 +25,7 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fluids.BlockFluidClassic;
@@ -60,6 +61,11 @@ public class Wings {
 	public static ItemGoggles GOGGLES;
 	
 	public static Fluid JET_FUEL;
+	
+	public static SoundEvent THRUST;
+	public static SoundEvent AFTERBURNER_START;
+	public static SoundEvent AFTERBURNER;
+	public static SoundEvent SONIC_BOOM;
 	
 	public static final IAttribute FLIGHT_SPEED = (new RangedAttribute(null, "wings:generic.flightSpeed", 1, 0.1, 1024)).setShouldWatch(true);
 	
@@ -213,6 +219,18 @@ public class Wings {
 				.setRegistryName("goggles"));
 		
 		e.getRegistry().register(new ItemBlock(CONVERTER).setRegistryName("converter"));
+	}
+	
+	@SubscribeEvent
+	public void onRegisterSounds(RegistryEvent.Register<SoundEvent> e) {
+		e.getRegistry().register(THRUST = new SoundEvent(new ResourceLocation("wings", "thrust"))
+				.setRegistryName("thrust"));
+		e.getRegistry().register(AFTERBURNER = new SoundEvent(new ResourceLocation("wings", "afterburner"))
+				.setRegistryName("afterburner"));
+		e.getRegistry().register(AFTERBURNER_START = new SoundEvent(new ResourceLocation("wings", "afterburner_start"))
+				.setRegistryName("afterburner_start"));
+		e.getRegistry().register(SONIC_BOOM = new SoundEvent(new ResourceLocation("wings", "sonic_boom"))
+				.setRegistryName("sonic_boom"));
 	}
 	
 	@SubscribeEvent

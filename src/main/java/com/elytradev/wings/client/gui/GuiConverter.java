@@ -93,11 +93,11 @@ public class GuiConverter extends GuiContainer {
 		} else {
 			int yc = y+h;
 			for (int i = 0; i < fullSquares; i++) {
-				ClientProxy.drawRect(x, yc-16, tex, 16, 16, false);
+				ClientProxy.drawTexturedRect(x, yc-16, tex, 16, 16, false);
 				yc -= 16;
 			}
 			int lastHeight = fh%16;
-			ClientProxy.drawRect(x, yc-lastHeight, tex, 16, lastHeight, true);
+			ClientProxy.drawTexturedRect(x, yc-lastHeight, tex, 16, lastHeight, true);
 		}
 	}
 
