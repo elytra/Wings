@@ -133,7 +133,7 @@ public final class WingsPlayer {
 						player.motionZ += look.z;
 					}
 					
-					if (brake && wings.burnFuel(chest, 1, !player.world.isRemote)) {
+					if (brake) {
 						player.motionX *= 0.98;
 						if (player.motionY > 0) {
 							player.motionY *= 0.98;

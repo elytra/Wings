@@ -341,7 +341,9 @@ public class ClientProxy extends Proxy {
 							}
 							
 							wp.afterburner = keyAfterburner.isKeyDown();
-							wp.brake = keyBrake.isKeyDown();
+							// isPressed checks KeyModifier, which seems to be broken with our input code
+							wp.brake = pressed.get(keyBrake);
+							System.out.println(wp.brake);
 							
 							if (wp.afterburner && !wp.lastTickAfterburner) {
 								mc.getSoundHandler().playSound(new AfterburnerStartSound(ep));
@@ -501,7 +503,6 @@ public class ClientProxy extends Proxy {
 				pressed.set(kb, state);
 				if (state) {
 					pressTime.set(kb, pressTime.get(kb) + 1);
-					System.out.println(pressTime.get(kb));
 				}
 			}
 		}
