@@ -341,7 +341,7 @@ public class ClientProxy extends Proxy {
 							}
 							
 							wp.afterburner = keyAfterburner.isKeyDown();
-							// isPressed checks KeyModifier, which seems to be broken with our input code
+							// isKeyDown checks KeyModifier, which seems to be broken with our input code
 							wp.brake = pressed.get(keyBrake);
 							System.out.println(wp.brake);
 							
@@ -499,6 +499,7 @@ public class ClientProxy extends Proxy {
 	
 	private void setAdvancedButtonsPressed(int keyCode, boolean state) {
 		for (KeyBinding kb : advancedFlightKeybinds) {
+			// isActiveAndMatches checkes KeyModifier, which is broken with our input code
 			if (keyCode == kb.getKeyCode() && kb.getKeyModifier().isActive(null)) {
 				pressed.set(kb, state);
 				if (state) {
