@@ -7,8 +7,9 @@ import javax.vecmath.Vector3f;
 import net.minecraft.util.math.MathHelper;
 
 import static java.lang.Math.*;
+import static net.minecraft.util.math.MathHelper.*;
 
-public class WMath extends MathHelper {
+public class WMath {
 
 	public static final float PIf = (float)PI;
 	public static final float RAD2DEG = (float)(180 / PI);
