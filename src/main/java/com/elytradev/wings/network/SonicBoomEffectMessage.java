@@ -6,35 +6,34 @@ import com.elytradev.concrete.network.annotation.field.MarshalledAs;
 import com.elytradev.concrete.network.annotation.type.ReceivedOn;
 import com.elytradev.wings.Wings;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @ReceivedOn(Side.CLIENT)
-public class PlayerRollMessage extends Message {
+public class SonicBoomEffectMessage extends Message {
 
 	@MarshalledAs("i32")
 	private int entityId;
-	@MarshalledAs("f32")
-	private float roll;
 	
-	public PlayerRollMessage(NetworkContext ctx) {
+	public SonicBoomEffectMessage(NetworkContext ctx) {
 		super(ctx);
 	}
 	
-	public PlayerRollMessage(EntityPlayer player, float roll) {
+	public SonicBoomEffectMessage(Entity e) {
 		super(Wings.inst.network);
-		this.entityId = player.getEntityId();
-		this.roll = roll;
+		this.entityId = e.getEntityId();
 	}
 	
 	@Override
 	@SideOnly(Side.CLIENT)
 	protected void handle(EntityPlayer player) {
 		Entity e = player.world.getEntityByID(entityId);
-		if (e instanceof EntityPlayer) {
-			EntityPlayer subject = (EntityPlayer)e;
+		if (e != null) {
+			boolean close = player.getDistanceSqToEntity(e) < 1024;
+			Minecraft.getMinecraft().player.playSound(Wings.SONIC_BOOM, close ? 1f : 0.5f, 1f);
 		}
 	}
 

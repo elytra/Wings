@@ -3,20 +3,26 @@ package com.elytradev.wings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Map;
 import java.util.Optional;
+
+import javax.vecmath.Quat4f;
 
 import com.elytradev.concrete.reflect.accessor.Accessor;
 import com.elytradev.concrete.reflect.accessor.Accessors;
 import com.elytradev.concrete.reflect.invoker.Invoker;
 import com.elytradev.concrete.reflect.invoker.Invokers;
 import com.elytradev.wings.item.ItemWings;
-import com.elytradev.wings.network.PlayerRollMessage;
+import com.elytradev.wings.network.PlayerWingsUpdateMessage;
+import com.elytradev.wings.network.SonicBoomEffectMessage;
+import com.google.common.base.Objects;
 import com.google.common.collect.MapMaker;
 
 public final class WingsPlayer {
@@ -52,9 +58,13 @@ public final class WingsPlayer {
 	}
 	
 	public final EntityPlayer player;
-	public float rotationRoll;
+	public Quat4f rotation;
 	
-	public int rollUpdatesThisTick;
+	public float motionRoll;
+	public float motionYaw;
+	public float motionPitch;
+	
+	public int updatesThisTick;
 	public FlightState flightState;
 	
 	public float thruster;
@@ -63,7 +73,7 @@ public final class WingsPlayer {
 	
 	public boolean sonicBoom;
 	
-	public float lastTickRotationRoll;
+	public Quat4f prevRotation;
 	public float lastTickThruster;
 	public boolean lastTickAfterburner;
 	public boolean lastTickBrake;
@@ -74,16 +84,41 @@ public final class WingsPlayer {
 	}
 	
 	public void update() {
-		if (player.isDead) return;
-		lastTickRotationRoll = rotationRoll;
+		if (player.isDead) {
+			flightState = FlightState.NONE;
+			return;
+		}
+		prevRotation = rotation;
 		lastTickThruster = thruster;
 		lastTickAfterburner = afterburner;
 		lastTickBrake = brake;
 		lastTickSonicBoom = sonicBoom;
-		rollUpdatesThisTick = 0;
+		updatesThisTick = 0;
 		
 		if (flightState != FlightState.FLYING_ADVANCED) {
-			rotationRoll = 0;
+			rotation = null;
+			motionRoll = 0;
+			motionYaw = 0;
+			motionPitch = 0;
+		} else if (rotation == null) {
+			rotation = WMath.fromEuler(WMath.deg2rad(player.rotationYaw-180), WMath.deg2rad(player.rotationPitch), 0);
+		}
+		
+		motionRoll *= 0.95f;
+		motionYaw *= 0.95f;
+		motionPitch *= 0.95f;
+		
+		double speed = (player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ);
+		
+		if (flightState != FlightState.NONE) {
+			player.fallDistance = 0;
+			if (player.isCollidedHorizontally || player.isCollidedVertically) {
+				int dmg = (int)(speed*10)-3;
+				if (dmg > 0) {
+					player.playSound(dmg > 3 ? SoundEvents.ENTITY_GENERIC_BIG_FALL : SoundEvents.ENTITY_GENERIC_SMALL_FALL, 1, 1);
+					player.attackEntityFrom(DamageSource.FLY_INTO_WALL, dmg);
+				}
+			}
 		}
 		
 		ItemStack chest = player.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
@@ -100,7 +135,6 @@ public final class WingsPlayer {
 					flightState = FlightState.NONE;
 				}
 				setFlag.invoke(player, 7, true);
-				player.fallDistance = 0;
 				if (wings.hasThruster()) {
 					if (afterburner && wings.burnFuel(chest, 1, player.world.isRemote)) {
 						Vec3d look = player.getLookVec().scale(0.03);
@@ -119,15 +153,15 @@ public final class WingsPlayer {
 			} else if (flightState == FlightState.FLYING_ADVANCED) {
 				setFlag.invoke(player, 7, true);
 				if (wings.hasThruster()) {
-					double speed = 0;
+					double thrust = 0;
 					if (afterburner && wings.burnFuel(chest, 14, player.world.isRemote)) {
-						speed = 0.1;
+						thrust = 0.1;
 					} else if (thruster > 0 && wings.burnFuel(chest, (int)Math.ceil(3*thruster), player.world.isRemote)) {
-						speed = thruster*0.05;
+						thrust = thruster*0.05;
 					}
 					
-					if (speed > 0) {
-						Vec3d look = player.getLookVec().scale(speed);
+					if (thrust > 0) {
+						Vec3d look = player.getLookVec().scale(thrust);
 						player.motionX += look.x;
 						player.motionY += look.y;
 						player.motionZ += look.z;
@@ -147,22 +181,36 @@ public final class WingsPlayer {
 						player.motionZ *= 0.75;
 					}
 				}
-				player.fallDistance = 0;
 			} else {
 				setFlag.invoke(player, 7, false);
 			}
 		}
 		
-		double speed = (player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ);
+		if (!player.isSneaking() && flightState != FlightState.NONE) {
+			player.motionX = player.motionY = player.motionZ = 0;
+			player.setLocationAndAngles((Math.floor(player.posX/5)+0.5)*5, (Math.floor(player.posY/5)+0.5)*5, (Math.floor(player.posZ/5)+0.5)*5, player.rotationYaw, player.rotationPitch);
+			allowFlight();
+		}
+
+		if (sonicBoom) {
+			if (player.getItemStackFromSlot(EntityEquipmentSlot.HEAD).getItem() != Wings.GOGGLES) {
+				player.attackEntityFrom(Wings.SUPERSONIC_NO_GOGGLES, 5f);
+			}
+		}
+		
 		if (speed > SOUND_BARRIER_SQ && !sonicBoom) {
 			sonicBoom = true;
-			player.playSound(Wings.SONIC_BOOM, 1f, 1f);
+			new SonicBoomEffectMessage(player).sendToAllAround(player.world, player, 128);
 		} else if (speed < END_BOOM_STATE_SQ) {
 			sonicBoom = false;
 		}
 		
-		if (rotationRoll != lastTickRotationRoll && !player.world.isRemote) {
-			new PlayerRollMessage(player, rotationRoll).sendToAllWatching(player);
+		if (!player.world.isRemote &&
+				!Objects.equal(rotation, prevRotation)
+				|| thruster != lastTickThruster
+				|| afterburner != lastTickAfterburner
+				|| brake != lastTickBrake) {
+			new PlayerWingsUpdateMessage(this).sendToAllWatching(player);
 		}
 	}
 

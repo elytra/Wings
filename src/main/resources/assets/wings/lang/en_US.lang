@@ -3,6 +3,7 @@ item.wings.leather_elytra.name=Flappy Wings
 item.wings.metal_elytra.name=Clanky Wings
 item.wings.metal_jet_elytra.name=Zoomy Wings
 item.wings.goggles.name=Flight Goggles
+item.wings.goggles.hint=Allows you to go supersonic without dying
 
 fluid.wings.jetfuel=Jet Fuel
 fluid.wings.empty=Empty
@@ -45,3 +46,5 @@ hud.wings.thruster.off=Thrust: §4OFF
 hud.wings.thruster.no_fuel=Thrust: §8NO FUEL
 
 subtitles.wings.sonic_boom=Sonic boom
+
+attack.

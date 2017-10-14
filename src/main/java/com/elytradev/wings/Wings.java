@@ -9,21 +9,21 @@ import com.elytradev.wings.item.ItemGoggles;
 import com.elytradev.wings.item.ItemLeatherElytra;
 import com.elytradev.wings.item.ItemMetalElytra;
 import com.elytradev.wings.item.ItemMetalJetElytra;
-import com.elytradev.wings.network.PlayerRollMessage;
+import com.elytradev.wings.network.PlayerWingsUpdateMessage;
 import com.elytradev.wings.network.SetFlightStateMessage;
-import com.elytradev.wings.network.SetRollMessage;
+import com.elytradev.wings.network.SetRotationMessage;
 import com.elytradev.wings.network.SetThrusterMessage;
+import com.elytradev.wings.network.SonicBoomEffectMessage;
 import com.elytradev.wings.tile.TileEntityConverter;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.ai.attributes.IAttribute;
-import net.minecraft.entity.ai.attributes.RangedAttribute;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -66,8 +66,10 @@ public class Wings {
 	public static SoundEvent AFTERBURNER_START;
 	public static SoundEvent AFTERBURNER;
 	public static SoundEvent SONIC_BOOM;
+	public static SoundEvent SONIC_BOOM_SELF;
+	public static SoundEvent SONIC_BOOM_SELF_START;
 	
-	public static final IAttribute FLIGHT_SPEED = (new RangedAttribute(null, "wings:generic.flightSpeed", 1, 0.1, 1024)).setShouldWatch(true);
+	public static DamageSource SUPERSONIC_NO_GOGGLES = new DamageSource("wings.supersonic_no_goggles");
 	
 	@SidedProxy(clientSide="com.elytradev.wings.client.ClientProxy", serverSide="com.elytradev.wings.Proxy")
 	public static Proxy proxy;
@@ -96,8 +98,9 @@ public class Wings {
 		network = NetworkContext.forChannel("wings");
 		network.register(SetFlightStateMessage.class);
 		network.register(SetThrusterMessage.class);
-		network.register(SetRollMessage.class);
-		network.register(PlayerRollMessage.class);
+		network.register(SetRotationMessage.class);
+		network.register(PlayerWingsUpdateMessage.class);
+		network.register(SonicBoomEffectMessage.class);
 		NetworkRegistry.INSTANCE.registerGuiHandler(this, new WingsGuiHandler());
 		
 		OreDictionary.registerOre("coal", new ItemStack(Items.COAL, 1, 0));
@@ -231,6 +234,10 @@ public class Wings {
 				.setRegistryName("afterburner_start"));
 		e.getRegistry().register(SONIC_BOOM = new SoundEvent(new ResourceLocation("wings", "sonic_boom"))
 				.setRegistryName("sonic_boom"));
+		e.getRegistry().register(SONIC_BOOM_SELF = new SoundEvent(new ResourceLocation("wings", "sonic_boom_self"))
+				.setRegistryName("sonic_boom_self"));
+		e.getRegistry().register(SONIC_BOOM_SELF_START = new SoundEvent(new ResourceLocation("wings", "sonic_boom_self_start"))
+				.setRegistryName("sonic_boom_self_start"));
 	}
 	
 	@SubscribeEvent

@@ -1,17 +1,10 @@
 package com.elytradev.wings.item;
 
-import java.util.UUID;
-
-import com.elytradev.wings.Wings;
 import com.elytradev.wings.client.render.DummyModel;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemArmor;
@@ -25,16 +18,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 public abstract class ItemWings extends ItemArmor {
 
-	public static final UUID FLIGHT_SPEED_UUID = UUID.fromString("216a152b-0fc1-4481-bc79-720b15c6a0f5");
-	
-	private final double flightSpeed;
-	
-	public ItemWings(double flightSpeed) {
+	public ItemWings() {
 		super(ArmorMaterial.LEATHER, 0, EntityEquipmentSlot.CHEST);
 		setMaxStackSize(1);
 		setCreativeTab(CreativeTabs.TRANSPORTATION);
-		
-		this.flightSpeed = flightSpeed;
 	}
 	
 	@Override
@@ -50,15 +37,6 @@ public abstract class ItemWings extends ItemArmor {
 		} else {
 			return new ActionResult<>(EnumActionResult.FAIL, is);
 		}
-	}
-	
-	@Override
-	public Multimap<String, AttributeModifier> getItemAttributeModifiers(EntityEquipmentSlot equipmentSlot) {
-		Multimap<String, AttributeModifier> mm = HashMultimap.create();
-		if (equipmentSlot == EntityEquipmentSlot.CHEST) {
-			mm.put(Wings.FLIGHT_SPEED.getName(), new AttributeModifier(FLIGHT_SPEED_UUID, "Flight speed", flightSpeed, 1));
-		}
-		return mm;
 	}
 	
 	@Override

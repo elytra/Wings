@@ -3,6 +3,13 @@
 		"sounds": [ "wings:sonic_boom" ],
 		"subtitle": "subtitles.wings.sonic_boom"
 	},
+	"sonic_boom_self": {
+		"sounds": [ "wings:sonic_boom_self" ]
+	},
+	"sonic_boom_self_start": {
+		"sounds": [ "wings:sonic_boom_self_start" ],
+		"subtitle": "subtitles.wings.sonic_boom"
+	},
 	"afterburner": {
 		"sounds": [ "wings:afterburner" ]
 	},

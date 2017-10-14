@@ -13,20 +13,21 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * Unrealistic. Used on the client-side instead of a normal sound for cool factor.
  */
 @SideOnly(Side.CLIENT)
-public class FollowingSonicBoomSound extends MovingSound {
+public class SelfSonicBoomSound extends MovingSound {
 	private EntityPlayer player;
 
-	public FollowingSonicBoomSound(EntityPlayer player) {
-		super(Wings.SONIC_BOOM, SoundCategory.PLAYERS);
+	public SelfSonicBoomSound(EntityPlayer player) {
+		super(Wings.SONIC_BOOM_SELF, SoundCategory.PLAYERS);
 		this.player = player;
 		this.attenuationType = AttenuationType.NONE;
+		this.repeat = true;
 	}
 
 	@Override
 	public void update() {
 		WingsPlayer wp = WingsPlayer.get(player);
 		
-		if (!player.isDead && player.isElytraFlying() && wp.afterburner) {
+		if (!player.isDead && player.isElytraFlying() && wp.sonicBoom) {
 			xPosF = (float) player.posX;
 			yPosF = (float) player.posY;
 			zPosF = (float) player.posZ;

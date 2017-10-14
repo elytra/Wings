@@ -3,25 +3,31 @@ package com.elytradev.wings.client;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import javax.vecmath.AxisAngle4f;
+import javax.vecmath.Quat4f;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-
 import com.elytradev.concrete.reflect.accessor.Accessor;
 import com.elytradev.concrete.reflect.accessor.Accessors;
 import com.elytradev.concrete.reflect.invoker.Invoker;
 import com.elytradev.concrete.reflect.invoker.Invokers;
 import com.elytradev.wings.WingsPlayer;
 import com.elytradev.wings.Proxy;
+import com.elytradev.wings.WMath;
 import com.elytradev.wings.Wings;
 import com.elytradev.wings.WingsPlayer.FlightState;
 import com.elytradev.wings.client.key.KeyBindingAdvanced;
 import com.elytradev.wings.client.key.KeyBindingAdvancedWheel;
 import com.elytradev.wings.client.key.KeyEntryAdvanced;
 import com.elytradev.wings.client.render.LayerWings;
+import com.elytradev.wings.client.render.WingsRenderPlayer;
 import com.elytradev.wings.client.render.WingsTileEntityItemStackRenderer;
+import com.elytradev.wings.client.sound.AfterburnerSound;
 import com.elytradev.wings.client.sound.AfterburnerStartSound;
-import com.elytradev.wings.client.sound.FollowingSonicBoomSound;
+import com.elytradev.wings.client.sound.QuietElytraSound;
+import com.elytradev.wings.client.sound.SelfSonicBoomStartSound;
 import com.elytradev.wings.client.sound.ThrusterSound;
 import com.elytradev.wings.item.ItemWings;
 import com.elytradev.wings.network.SetFlightStateMessage;
@@ -29,8 +35,7 @@ import com.elytradev.wings.network.SetThrusterMessage;
 import com.google.common.collect.Lists;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.SoundHandler;
-import net.minecraft.client.audio.SoundManager;
+import net.minecraft.client.audio.ElytraSound;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
@@ -53,6 +58,7 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -61,10 +67,12 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
 import net.minecraftforge.client.event.EntityViewRenderEvent.FOVModifier;
+import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderSpecificHandEvent;
+import net.minecraftforge.client.event.sound.PlaySoundEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.client.settings.IKeyConflictContext;
@@ -79,7 +87,7 @@ import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
-import paulscode.sound.SoundSystem;
+import net.minecraftforge.fml.common.gameevent.TickEvent.RenderTickEvent;
 
 public class ClientProxy extends Proxy {
 
@@ -127,9 +135,10 @@ public class ClientProxy extends Proxy {
 	@Override
 	public void postInit() {
 		RenderManager manager = Minecraft.getMinecraft().getRenderManager();
-		Map<String, RenderPlayer> renders = manager.getSkinMap();
-		for (RenderPlayer render : renders.values()) {
-			render.addLayer(new LayerWings(render));
+		Map<String, RenderPlayer> renders = skinMap.get(manager);
+		for (Map.Entry<String, RenderPlayer> en : renders.entrySet()) {
+			en.getValue().addLayer(new LayerWings(en.getValue()));
+			en.setValue(new WingsRenderPlayer(en.getValue()));
 		}
 		
 		TileEntityItemStackRenderer.instance = new WingsTileEntityItemStackRenderer(TileEntityItemStackRenderer.instance);
@@ -165,8 +174,8 @@ public class ClientProxy extends Proxy {
 		ClientRegistry.registerKeyBinding(keyRollCounterclockwise = new KeyBindingAdvanced("key.wings.rollCCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_Q, catFM));
 		ClientRegistry.registerKeyBinding(keyRollClockwise = new KeyBindingAdvanced("key.wings.rollCW", ADVANCED_FLIGHT_KCC, Keyboard.KEY_E, catFM));
 		
-		ClientRegistry.registerKeyBinding(keyPitchUp = new KeyBindingAdvanced("key.wings.pitchUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_W, catFM));
-		ClientRegistry.registerKeyBinding(keyPitchDown = new KeyBindingAdvanced("key.wings.pitchDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_S, catFM));
+		ClientRegistry.registerKeyBinding(keyPitchUp = new KeyBindingAdvanced("key.wings.pitchUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_S, catFM));
+		ClientRegistry.registerKeyBinding(keyPitchDown = new KeyBindingAdvanced("key.wings.pitchDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_W, catFM));
 		
 		ClientRegistry.registerKeyBinding(keyTurnLeft = new KeyBindingAdvanced("key.wings.turnLeft", ADVANCED_FLIGHT_KCC, Keyboard.KEY_A, catFM));
 		ClientRegistry.registerKeyBinding(keyTurnRight = new KeyBindingAdvanced("key.wings.turnRight", ADVANCED_FLIGHT_KCC, Keyboard.KEY_D, catFM));
@@ -178,13 +187,11 @@ public class ClientProxy extends Proxy {
 		
 		advancedFlightKeybinds.add(keyToggleAdvanced);
 		
-		advancedFlightKeybinds.add(gm.keyBindAttack);
 		advancedFlightKeybinds.add(gm.keyBindChat);
 		advancedFlightKeybinds.add(gm.keyBindCommand);
 		advancedFlightKeybinds.add(gm.keyBindScreenshot);
 		advancedFlightKeybinds.add(gm.keyBindPlayerList);
 		advancedFlightKeybinds.add(gm.keyBindTogglePerspective);
-		advancedFlightKeybinds.add(gm.keyBindUseItem);
 		advancedFlightKeybinds.add(gm.keyBindSmoothCamera);
 			
 		MinecraftForge.EVENT_BUS.register(this);
@@ -223,9 +230,7 @@ public class ClientProxy extends Proxy {
 	private final Accessor<Boolean> pressed = Accessors.findField(KeyBinding.class, "field_74513_e", "pressed");
 	private final Accessor<Integer> pressTime = Accessors.findField(KeyBinding.class, "field_151474_i", "pressTime");
 	private final Accessor<Map<String, KeyBinding>> KEYBIND_ARRAY = Accessors.findField(KeyBinding.class, "field_74516_a", "KEYBIND_ARRAY");
-	
-	private final Accessor<SoundManager> sndManager = Accessors.findField(SoundHandler.class, "field_147694_f", "sndManager");
-	private final Accessor<SoundSystem> sndSystem = Accessors.findField(SoundManager.class, "field_148620_e", "sndSystem");
+	private final Accessor<Map<String, RenderPlayer>> skinMap = Accessors.findField(RenderManager.class, "field_178636_l", "skinMap");
 	
 	private boolean actionKeyF3 = false;
 	
@@ -240,6 +245,47 @@ public class ClientProxy extends Proxy {
 	private boolean wheelDown;
 	
 	private float oldThrusterValue;
+	
+	@SubscribeEvent
+	public void onRenderTick(RenderTickEvent e) {
+		if (e.phase == Phase.START) {
+			if (lastFlightState == FlightState.FLYING_ADVANCED) {
+				Minecraft mc = Minecraft.getMinecraft();
+				EntityPlayer ep = mc.player;
+				WingsPlayer wp = WingsPlayer.get(ep);
+				if (wp.rotation == null) return;
+				if (mc.currentScreen != null) return;
+				int dxRaw = Mouse.getDX();
+				int dyRaw = Mouse.getDY();
+				
+				float sensitivity = mc.gameSettings.mouseSensitivity * 0.4f + 0.2f;
+				float mult = sensitivity * sensitivity * sensitivity * 8;
+				float dx = dxRaw * mult;
+				float dy = dyRaw * mult;
+
+				if (mc.gameSettings.invertMouse) {
+					dy *= -1;
+				}
+				
+				if (dx != 0) {
+					Quat4f yawQ = new Quat4f();
+					yawQ.set(new AxisAngle4f(0, 1, 0, WMath.deg2rad(dx)));
+					
+					wp.rotation.mul(yawQ, wp.rotation);
+				}
+				if (dy != 0) {
+					Quat4f pitchQ = new Quat4f();
+					pitchQ.set(new AxisAngle4f(1, 0, 0, WMath.deg2rad(-dy)));
+					
+					wp.rotation.mul(pitchQ, wp.rotation);
+				}
+				
+				// for frustrum culling and correct facing when leaving advanced mode
+				ep.rotationYaw = ep.prevRotationYaw = WMath.getYaw(wp.rotation);
+				ep.rotationPitch = ep.prevRotationPitch = WMath.getPitch(wp.rotation);
+			}
+		}
+	}
 	
 	@SubscribeEvent
 	public void onClientTick(ClientTickEvent e) {
@@ -281,7 +327,8 @@ public class ClientProxy extends Proxy {
 					}
 					if (mc.gameSettings.keyBindJump.isKeyDown() && !jumpTainted && lastFlightState == FlightState.NONE) {
 						if (!ep.onGround && ep.motionY < 0 && !ep.isInWater()) {
-							Minecraft.getMinecraft().getSoundHandler().playSound(new ThrusterSound(ep));
+							mc.getSoundHandler().playSound(new ThrusterSound(ep));
+							mc.getSoundHandler().playSound(new QuietElytraSound(ep));
 							newState = FlightState.FLYING;
 						} else {
 							newState = lastFlightState;
@@ -331,6 +378,7 @@ public class ClientProxy extends Proxy {
 								if (wp.thruster < 0) {
 									wp.thruster = 0;
 								}
+								oldThrusterValue = 0;
 							}
 							
 							if (wheelUp || keyThrottleDown.isKeyDown()) {
@@ -338,18 +386,26 @@ public class ClientProxy extends Proxy {
 								if (wp.thruster > 1) {
 									wp.thruster = 1;
 								}
+								oldThrusterValue = 0;
 							}
 							
 							wp.afterburner = keyAfterburner.isKeyDown();
 							// isKeyDown checks KeyModifier, which seems to be broken with our input code
 							wp.brake = pressed.get(keyBrake);
-							System.out.println(wp.brake);
 							
 							if (wp.afterburner && !wp.lastTickAfterburner) {
 								mc.getSoundHandler().playSound(new AfterburnerStartSound(ep));
 							}
 							if (wp.sonicBoom && !wp.lastTickSonicBoom) {
-								mc.getSoundHandler().playSound(new FollowingSonicBoomSound(ep));
+								mc.getSoundHandler().stopSounds();
+								mc.getSoundHandler().playSound(new SelfSonicBoomStartSound(ep));
+							}
+							if (!wp.sonicBoom && wp.lastTickSonicBoom) {
+								if (wp.afterburner) {
+									mc.getSoundHandler().playSound(new AfterburnerSound(ep));
+								}
+								mc.getSoundHandler().playSound(new ThrusterSound(ep));
+								mc.getSoundHandler().playSound(new QuietElytraSound(ep));
 							}
 							
 							wheelUp = false;
@@ -380,10 +436,18 @@ public class ClientProxy extends Proxy {
 				}
 				if (newState == FlightState.FLYING_ADVANCED) {
 					if (keyRollClockwise.isKeyDown()) {
-						wp.rotationRoll += 4.5f;
 					}
 					if (keyRollCounterclockwise.isKeyDown()) {
-						wp.rotationRoll -= 4.5f;
+					}
+					
+					if (keyTurnLeft.isKeyDown()) {
+					}
+					if (keyTurnRight.isKeyDown()) {
+					}
+					
+					if (keyPitchUp.isKeyDown()) {
+					}
+					if (keyPitchDown.isKeyDown()) {
 					}
 				}
 				if (newState != lastFlightState) {
@@ -510,6 +574,29 @@ public class ClientProxy extends Proxy {
 	}
 	
 	@SubscribeEvent
+	public void onDrawBlockHighlight(DrawBlockHighlightEvent e) {
+		if (lastFlightState == FlightState.FLYING_ADVANCED) {
+			e.setCanceled(true);
+		}
+	}
+	
+	@SubscribeEvent
+	public void onPlaySoundEvent(PlaySoundEvent e) {
+		Optional<WingsPlayer> opt = WingsPlayer.getIfExists(Minecraft.getMinecraft().player);
+		if (opt.isPresent()) {
+			WingsPlayer wp = opt.get();
+			if (wp.sonicBoom) {
+				if (e.getName().startsWith("sonic_boom_self")) return;
+				e.setResultSound(null);
+			} else if (wp.player.getItemStackFromSlot(EntityEquipmentSlot.CHEST).getItem() instanceof ItemWings) {
+				if (e.getSound() instanceof ElytraSound && !(e.getSound() instanceof QuietElytraSound)) {
+					e.setResultSound(null);
+				}
+			}
+		}
+	}
+	
+	@SubscribeEvent
 	public void onRenderHand(RenderSpecificHandEvent e) {
 		if (advancedFlightTicks > 10) {
 			e.setCanceled(true);
@@ -525,7 +612,7 @@ public class ClientProxy extends Proxy {
 			EntityPlayerSP player = Minecraft.getMinecraft().player;
 			WingsPlayer wp = WingsPlayer.get(player);
 			if (wp.sonicBoom) {
-				e.setFOV(e.getFOV()*1.75f);
+				e.setFOV(e.getFOV()*2.5f);
 			} else {
 				float speed = (float)Math.sqrt((player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ));
 				speed /= WingsPlayer.SOUND_BARRIER;
@@ -533,12 +620,19 @@ public class ClientProxy extends Proxy {
 			}
 		}
 	}
-
+	
 	@SubscribeEvent
 	public void onCameraSetup(CameraSetup e) {
 		if (lastFlightState == FlightState.FLYING_ADVANCED) {
-			WingsPlayer wp = WingsPlayer.get(Minecraft.getMinecraft().player);
-			e.setRoll(wp.lastTickRotationRoll + (wp.rotationRoll-wp.lastTickRotationRoll)*(float)e.getRenderPartialTicks());
+			EntityPlayer player = Minecraft.getMinecraft().player;
+			WingsPlayer wp = WingsPlayer.get(player);
+			if (wp.rotation != null) {
+				e.setRoll(0);
+				e.setYaw(0);
+				e.setPitch(0);
+				
+				Rendering.rotate(wp.prevRotation, wp.rotation, (float)e.getRenderPartialTicks());
+			}
 		}
 	}
 	
