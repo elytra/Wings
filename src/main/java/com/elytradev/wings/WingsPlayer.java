@@ -13,8 +13,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.vecmath.Quat4f;
-
+import javax.vecmath.Quat4d;
 import com.elytradev.concrete.reflect.accessor.Accessor;
 import com.elytradev.concrete.reflect.accessor.Accessors;
 import com.elytradev.concrete.reflect.invoker.Invoker;
@@ -58,7 +57,7 @@ public final class WingsPlayer {
 	}
 	
 	public final EntityPlayer player;
-	public Quat4f rotation;
+	public Quat4d rotation;
 	
 	public float motionRoll;
 	public float motionYaw;
@@ -73,7 +72,7 @@ public final class WingsPlayer {
 	
 	public boolean sonicBoom;
 	
-	public Quat4f prevRotation;
+	public Quat4d prevRotation;
 	public float lastTickThruster;
 	public boolean lastTickAfterburner;
 	public boolean lastTickBrake;
@@ -88,7 +87,7 @@ public final class WingsPlayer {
 			flightState = FlightState.NONE;
 			return;
 		}
-		prevRotation = rotation;
+		prevRotation = rotation == null ? null : (Quat4d)rotation.clone();
 		lastTickThruster = thruster;
 		lastTickAfterburner = afterburner;
 		lastTickBrake = brake;
@@ -104,9 +103,13 @@ public final class WingsPlayer {
 			rotation = WMath.fromEuler(WMath.deg2rad(player.rotationYaw-180), WMath.deg2rad(player.rotationPitch), 0);
 		}
 		
-		motionRoll *= 0.95f;
-		motionYaw *= 0.95f;
-		motionPitch *= 0.95f;
+		if (rotation != null) {
+			rotation.mul(WMath.fromEuler(WMath.deg2rad(motionYaw), WMath.deg2rad(motionPitch), WMath.deg2rad(motionRoll)), rotation);
+		}
+		
+		motionRoll *= 0.92f;
+		motionYaw *= 0.92f;
+		motionPitch *= 0.92f;
 		
 		double speed = (player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ);
 		

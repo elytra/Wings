@@ -1,7 +1,6 @@
 package com.elytradev.wings.network;
 
-import javax.vecmath.Quat4f;
-
+import javax.vecmath.Quat4d;
 import com.elytradev.concrete.network.Message;
 import com.elytradev.concrete.network.NetworkContext;
 import com.elytradev.concrete.network.annotation.field.MarshalledAs;
@@ -17,20 +16,20 @@ import net.minecraftforge.fml.relauncher.Side;
 @ReceivedOn(Side.SERVER)
 public class SetRotationMessage extends Message {
 
-	@MarshalledAs("f32")
-	private float rotationX;
-	@MarshalledAs("f32")
-	private float rotationY;
-	@MarshalledAs("f32")
-	private float rotationZ;
-	@MarshalledAs("f32")
-	private float rotationW;
+	@MarshalledAs("f64")
+	private double rotationX;
+	@MarshalledAs("f64")
+	private double rotationY;
+	@MarshalledAs("f64")
+	private double rotationZ;
+	@MarshalledAs("f64")
+	private double rotationW;
 	
 	public SetRotationMessage(NetworkContext ctx) {
 		super(ctx);
 	}
 	
-	public SetRotationMessage(Quat4f rotation) {
+	public SetRotationMessage(Quat4d rotation) {
 		super(Wings.inst.network);
 		this.rotationX = rotation.x;
 		this.rotationY = rotation.y;
@@ -46,10 +45,10 @@ public class SetRotationMessage extends Message {
 		boolean playerUntrusted = !ep.world.getMinecraftServer().isSinglePlayer() && !ep.world.getMinecraftServer().getServerOwner().equals(ep.getName());
 		
 		WingsPlayer wp = WingsPlayer.get(ep);
-		if (!Float.isFinite(rotationX) ||
-				!Float.isFinite(rotationY) ||
-				!Float.isFinite(rotationZ) ||
-				!Float.isFinite(rotationW)) {
+		if (!Double.isFinite(rotationX) ||
+				!Double.isFinite(rotationY) ||
+				!Double.isFinite(rotationZ) ||
+				!Double.isFinite(rotationW)) {
 			Wings.log.warn("{} sent invalid (non-finite) rotations", ep.getName());
 			ep.connection.disconnect(new TextComponentTranslation("multiplayer.disconnect.wings.invalid_roll"));
 			return;
@@ -60,7 +59,7 @@ public class SetRotationMessage extends Message {
 			new PlayerWingsUpdateMessage(wp).sendTo(ep);
 			return;
 		}
-		wp.rotation = new Quat4f(rotationX, rotationY, rotationZ, rotationW);
+		wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
 	}
 
 }

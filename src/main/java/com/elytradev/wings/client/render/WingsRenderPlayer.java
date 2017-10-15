@@ -2,6 +2,8 @@ package com.elytradev.wings.client.render;
 
 import java.util.Optional;
 
+import com.elytradev.concrete.reflect.accessor.Accessor;
+import com.elytradev.concrete.reflect.accessor.Accessors;
 import com.elytradev.concrete.reflect.invoker.Invoker;
 import com.elytradev.concrete.reflect.invoker.Invokers;
 import com.elytradev.wings.WingsPlayer;
@@ -10,6 +12,7 @@ import com.elytradev.wings.client.Rendering;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.model.ModelPlayer;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.RenderLivingBase;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -22,7 +25,12 @@ import net.minecraft.util.ResourceLocation;
 public class WingsRenderPlayer extends RenderPlayer {
 
 	private final RenderPlayer delegate;
+	
 	private final Invoker applyRotations = Invokers.findMethod(RenderLivingBase.class, "applyRotations", "func_77043_a", EntityLivingBase.class, float.class, float.class, float.class);
+	private final Invoker renderModel = Invokers.findMethod(RenderLivingBase.class, "renderModel", "func_77036_a", EntityLivingBase.class, float.class, float.class, float.class, float.class, float.class, float.class);
+	private final Invoker setFlag = Invokers.findMethod(Entity.class, "setFlag", "func_70052_a", int.class, boolean.class);
+	
+	private final Accessor<Integer> ticksElytraFlying = Accessors.findField(EntityLivingBase.class, "field_184629_bo", "ticksElytraFlying");
 	
 	public WingsRenderPlayer(RenderPlayer delegate) {
 		super(delegate.getRenderManager());
@@ -31,16 +39,37 @@ public class WingsRenderPlayer extends RenderPlayer {
 
 	
 	@Override
-	protected void applyRotations(AbstractClientPlayer entityLiving, float p_77043_2_, float rotationYaw, float partialTicks) {
-		Optional<WingsPlayer> opt = WingsPlayer.getIfExists(entityLiving);
+	protected void applyRotations(AbstractClientPlayer acp, float p_77043_2_, float rotationYaw, float partialTicks) {
+		Optional<WingsPlayer> opt = WingsPlayer.getIfExists(acp);
 		if (opt.isPresent()) {
 			WingsPlayer wp = opt.get();
 			if (wp.rotation != null) {
 				Rendering.rotate(wp.prevRotation, wp.rotation, partialTicks);
+				GlStateManager.translate(0, -0.8f, 0);
 				return;
 			}
 		}
-		applyRotations.invoke(delegate, entityLiving, p_77043_2_, rotationYaw, partialTicks);
+		applyRotations.invoke(delegate, acp, p_77043_2_, rotationYaw, partialTicks);
+	}
+	
+	@Override
+	protected void renderModel(AbstractClientPlayer acp, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
+		Optional<WingsPlayer> opt = WingsPlayer.getIfExists(acp);
+		if (opt.isPresent()) {
+			WingsPlayer wp = opt.get();
+			if (wp.rotation != null) {
+				setFlag.invoke(acp, 7, false);
+				int oldTicksElytraFlying = acp.getTicksElytraFlying();
+				ticksElytraFlying.set(acp, 0);
+				getMainModel().isChild = false;
+				renderModel.invoke(delegate, acp, 0, 0, ageInTicks, 0, -60, scaleFactor);
+				ticksElytraFlying.set(acp, oldTicksElytraFlying);
+				setFlag.invoke(acp, 7, true);
+				return;
+			}
+		}
+		getMainModel().isChild = false;
+		renderModel.invoke(delegate, acp, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
 	}
 	
 	@Override

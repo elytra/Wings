@@ -1,12 +1,14 @@
 package com.elytradev.wings.client;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.vecmath.AxisAngle4f;
-import javax.vecmath.Quat4f;
+import javax.vecmath.AxisAngle4d;
+import javax.vecmath.Quat4d;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import com.elytradev.concrete.reflect.accessor.Accessor;
@@ -268,21 +270,21 @@ public class ClientProxy extends Proxy {
 				}
 				
 				if (dx != 0) {
-					Quat4f yawQ = new Quat4f();
-					yawQ.set(new AxisAngle4f(0, 1, 0, WMath.deg2rad(dx)));
+					Quat4d yawQ = new Quat4d();
+					yawQ.set(new AxisAngle4d(0, 1, 0, WMath.deg2rad(dx)));
 					
-					wp.rotation.mul(yawQ, wp.rotation);
+					wp.rotation.mul(wp.rotation, yawQ);
 				}
 				if (dy != 0) {
-					Quat4f pitchQ = new Quat4f();
-					pitchQ.set(new AxisAngle4f(1, 0, 0, WMath.deg2rad(-dy)));
+					Quat4d pitchQ = new Quat4d();
+					pitchQ.set(new AxisAngle4d(1, 0, 0, WMath.deg2rad(-dy)));
 					
 					wp.rotation.mul(pitchQ, wp.rotation);
 				}
 				
 				// for frustrum culling and correct facing when leaving advanced mode
-				ep.rotationYaw = ep.prevRotationYaw = WMath.getYaw(wp.rotation);
-				ep.rotationPitch = ep.prevRotationPitch = WMath.getPitch(wp.rotation);
+				ep.rotationYaw = ep.prevRotationYaw = (float)(WMath.rad2deg(WMath.getYaw(wp.rotation))+180);
+				ep.rotationPitch = ep.prevRotationPitch = (float)(-WMath.rad2deg(WMath.getPitch(wp.rotation)));
 			}
 		}
 	}
@@ -436,18 +438,24 @@ public class ClientProxy extends Proxy {
 				}
 				if (newState == FlightState.FLYING_ADVANCED) {
 					if (keyRollClockwise.isKeyDown()) {
+						wp.motionRoll += 0.5f;
 					}
 					if (keyRollCounterclockwise.isKeyDown()) {
+						wp.motionRoll -= 0.5f;
 					}
 					
 					if (keyTurnLeft.isKeyDown()) {
+						wp.motionYaw -= 0.5f;
 					}
 					if (keyTurnRight.isKeyDown()) {
+						wp.motionYaw += 0.5f;
 					}
 					
 					if (keyPitchUp.isKeyDown()) {
+						wp.motionPitch += 0.5f;
 					}
 					if (keyPitchDown.isKeyDown()) {
+						wp.motionPitch -= 0.5f;
 					}
 				}
 				if (newState != lastFlightState) {
@@ -630,8 +638,48 @@ public class ClientProxy extends Proxy {
 				e.setRoll(0);
 				e.setYaw(0);
 				e.setPitch(0);
-				
-				Rendering.rotate(wp.prevRotation, wp.rotation, (float)e.getRenderPartialTicks());
+				if (Minecraft.getMinecraft().gameSettings.thirdPersonView == 0) {
+					Rendering.rotate(wp.prevRotation, wp.rotation, (float)e.getRenderPartialTicks());
+				}
+			}
+		}
+	}
+	
+	private final NumberFormat frac1 = NumberFormat.getInstance(); {
+		frac1.setGroupingUsed(false);
+		frac1.setMaximumFractionDigits(1);
+	}
+	
+	private final NumberFormat frac6 = NumberFormat.getInstance(); {
+		frac6.setGroupingUsed(false);
+		frac6.setMaximumFractionDigits(6);
+	}
+	
+	@SubscribeEvent
+	public void onRenderText(RenderGameOverlayEvent.Text e) {
+		if (Minecraft.getMinecraft().gameSettings.showDebugInfo) {
+			Optional<WingsPlayer> opt = WingsPlayer.getIfExists(Minecraft.getMinecraft().player);
+			if (opt.isPresent()) {
+				WingsPlayer wp = opt.get();
+				if (wp.rotation != null) {
+					ListIterator<String> iter = e.getLeft().listIterator();
+					int idx = e.getLeft().size();
+					while (iter.hasNext()) {
+						String str = iter.next();
+						if (str.startsWith("Facing: ")) {
+							iter.set("Facing: N/A");
+						} else if (str.startsWith("Local Difficulty: ")) {
+							idx = iter.nextIndex();
+						}
+					}
+					
+					double yaw = WMath.rad2deg(WMath.getYaw(wp.rotation));
+					double pitch = WMath.rad2deg(WMath.getPitch(wp.rotation));
+					double roll = WMath.rad2deg(WMath.getRoll(wp.rotation));
+					e.getLeft().add(idx++, "");
+					e.getLeft().add(idx++, "\u00A7b[Wings]\u00A7r Euler (Y/P/R): "+frac1.format(yaw)+"° / "+frac1.format(pitch)+"° / "+frac1.format(roll)+"°");
+					e.getLeft().add(idx++, "\u00A7b[Wings]\u00A7r Quaternion: "+frac6.format(wp.rotation.x)+", "+frac6.format(wp.rotation.y)+", "+frac6.format(wp.rotation.z)+", "+frac6.format(wp.rotation.w));
+				}
 			}
 		}
 	}

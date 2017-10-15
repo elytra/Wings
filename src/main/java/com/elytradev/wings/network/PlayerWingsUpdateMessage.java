@@ -1,7 +1,6 @@
 package com.elytradev.wings.network;
 
-import javax.vecmath.Quat4f;
-
+import javax.vecmath.Quat4d;
 import com.elytradev.concrete.network.Message;
 import com.elytradev.concrete.network.NetworkContext;
 import com.elytradev.concrete.network.annotation.field.MarshalledAs;
@@ -21,14 +20,14 @@ public class PlayerWingsUpdateMessage extends Message {
 	private int entityId;
 	@MarshalledAs("f32")
 	private float thruster;
-	@MarshalledAs("f32")
-	private float rotationX;
-	@MarshalledAs("f32")
-	private float rotationY;
-	@MarshalledAs("f32")
-	private float rotationZ;
-	@MarshalledAs("f32")
-	private float rotationW;
+	@MarshalledAs("f64")
+	private double rotationX;
+	@MarshalledAs("f64")
+	private double rotationY;
+	@MarshalledAs("f64")
+	private double rotationZ;
+	@MarshalledAs("f64")
+	private double rotationW;
 	
 	public PlayerWingsUpdateMessage(NetworkContext ctx) {
 		super(ctx);
@@ -59,7 +58,7 @@ public class PlayerWingsUpdateMessage extends Message {
 		if (e instanceof EntityPlayer) {
 			EntityPlayer subject = (EntityPlayer)e;
 			WingsPlayer wp = WingsPlayer.get(subject);
-			wp.rotation = new Quat4f(rotationX, rotationY, rotationZ, rotationW);
+			wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
 			if (thruster == SetThrusterMessage.AFTERBURNER_SPEED) {
 				wp.thruster = 0;
 				wp.afterburner = true;

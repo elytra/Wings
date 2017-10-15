@@ -3,10 +3,14 @@ package com.elytradev.wings.item;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
@@ -38,6 +42,11 @@ public class ItemGoggles extends ItemArmor {
 	@SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
 		tooltip.add(I18n.format("item.wings.goggles.hint"));
+	}
+	
+	@Override
+	public Multimap<String, AttributeModifier> getAttributeModifiers( EntityEquipmentSlot slot, ItemStack stack) {
+		return HashMultimap.create();
 	}
 	
 	@Override

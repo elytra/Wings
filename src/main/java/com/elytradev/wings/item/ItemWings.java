@@ -1,10 +1,14 @@
 package com.elytradev.wings.item;
 
 import com.elytradev.wings.client.render.DummyModel;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemArmor;
@@ -50,6 +54,11 @@ public abstract class ItemWings extends ItemArmor {
 		return DummyModel.INSTANCE;
 	}
 
+	@Override
+	public Multimap<String, AttributeModifier> getAttributeModifiers( EntityEquipmentSlot slot, ItemStack stack) {
+		return HashMultimap.create();
+	}
+	
 	public String getBaseMaterial() {
 		return "missingno";
 	}
