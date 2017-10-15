@@ -31,18 +31,18 @@ public class SetRotationMessage extends Message {
 	
 	public SetRotationMessage(Quat4d rotation) {
 		super(Wings.inst.network);
-		this.rotationX = rotation.x;
-		this.rotationY = rotation.y;
-		this.rotationZ = rotation.z;
-		this.rotationW = rotation.w;
+		if (rotation != null) {
+			this.rotationX = rotation.x;
+			this.rotationY = rotation.y;
+			this.rotationZ = rotation.z;
+			this.rotationW = rotation.w;
+		}
 	}
 	
 	@Override
 	protected void handle(EntityPlayer _playerIn) {
 		if (!(_playerIn instanceof EntityPlayerMP)) return;
 		EntityPlayerMP ep = (EntityPlayerMP)_playerIn;
-		
-		boolean playerUntrusted = !ep.world.getMinecraftServer().isSinglePlayer() && !ep.world.getMinecraftServer().getServerOwner().equals(ep.getName());
 		
 		WingsPlayer wp = WingsPlayer.get(ep);
 		if (!Double.isFinite(rotationX) ||
@@ -54,12 +54,22 @@ public class SetRotationMessage extends Message {
 			return;
 		}
 		wp.updatesThisTick++;
-		if (wp.updatesThisTick > 5 && playerUntrusted) {
+		if (wp.updatesThisTick > 5) {
 			Wings.log.warn("{} is sending updates too frequently ({} packets since last tick)", ep.getName(), wp.updatesThisTick);
 			new PlayerWingsUpdateMessage(wp).sendTo(ep);
 			return;
 		}
-		wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
+		if (rotationX == 0 && rotationY == 0 && rotationZ == 0 && rotationW == 0) {
+			wp.rotation = null;
+			if (wp.prevRotation != null) {
+				new PlayerWingsUpdateMessage(wp).sendToAllWatching(wp.player);
+			}
+		} else {
+			wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
+			if (wp.prevRotation == null || !wp.rotation.epsilonEquals(wp.prevRotation, 0.001)) {
+				new PlayerWingsUpdateMessage(wp).sendToAllWatching(wp.player);
+			}
+		}
 	}
 
 }

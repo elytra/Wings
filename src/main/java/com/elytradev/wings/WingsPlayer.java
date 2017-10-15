@@ -94,22 +94,24 @@ public final class WingsPlayer {
 		lastTickSonicBoom = sonicBoom;
 		updatesThisTick = 0;
 		
-		if (flightState != FlightState.FLYING_ADVANCED) {
-			rotation = null;
-			motionRoll = 0;
-			motionYaw = 0;
-			motionPitch = 0;
-		} else if (rotation == null) {
-			rotation = WMath.fromEuler(WMath.deg2rad(player.rotationYaw-180), WMath.deg2rad(player.rotationPitch), 0);
+		if (!player.world.isRemote || player.isUser()) {
+			if (flightState != FlightState.FLYING_ADVANCED) {
+				rotation = null;
+				motionRoll = 0;
+				motionYaw = 0;
+				motionPitch = 0;
+			} else if (rotation == null) {
+				rotation = WMath.fromEuler(WMath.deg2rad(player.rotationYaw-180), WMath.deg2rad(player.rotationPitch), 0);
+			}
+			
+			if (rotation != null) {
+				rotation.mul(WMath.fromEuler(WMath.deg2rad(motionYaw), WMath.deg2rad(motionPitch), WMath.deg2rad(motionRoll)), rotation);
+			}
+			
+			motionRoll *= 0.92f;
+			motionYaw *= 0.92f;
+			motionPitch *= 0.92f;
 		}
-		
-		if (rotation != null) {
-			rotation.mul(WMath.fromEuler(WMath.deg2rad(motionYaw), WMath.deg2rad(motionPitch), WMath.deg2rad(motionRoll)), rotation);
-		}
-		
-		motionRoll *= 0.92f;
-		motionYaw *= 0.92f;
-		motionPitch *= 0.92f;
 		
 		double speed = (player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ);
 		
@@ -189,7 +191,7 @@ public final class WingsPlayer {
 			}
 		}
 		
-		if (!player.isSneaking() && flightState != FlightState.NONE) {
+		if (!player.isSneaking() && flightState == FlightState.FLYING_ADVANCED) {
 			player.motionX = player.motionY = player.motionZ = 0;
 			player.setLocationAndAngles((Math.floor(player.posX/5)+0.5)*5, (Math.floor(player.posY/5)+0.5)*5, (Math.floor(player.posZ/5)+0.5)*5, player.rotationYaw, player.rotationPitch);
 			allowFlight();

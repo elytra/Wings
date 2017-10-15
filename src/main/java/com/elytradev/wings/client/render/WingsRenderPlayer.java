@@ -2,6 +2,8 @@ package com.elytradev.wings.client.render;
 
 import java.util.Optional;
 
+import javax.vecmath.Quat4d;
+
 import com.elytradev.concrete.reflect.accessor.Accessor;
 import com.elytradev.concrete.reflect.accessor.Accessors;
 import com.elytradev.concrete.reflect.invoker.Invoker;
@@ -44,7 +46,15 @@ public class WingsRenderPlayer extends RenderPlayer {
 		if (opt.isPresent()) {
 			WingsPlayer wp = opt.get();
 			if (wp.rotation != null) {
-				Rendering.rotate(wp.prevRotation, wp.rotation, partialTicks);
+				Quat4d prev = wp.prevRotation == null ? new Quat4d(0, 0, 0, 1) : (Quat4d)wp.prevRotation.clone();
+				Quat4d cur = (Quat4d)wp.rotation.clone();
+				prev.conjugate();
+				cur.conjugate();
+				Rendering.class.getName();
+				Rendering.rotate(prev, cur, partialTicks);
+				
+				GlStateManager.rotate(270, 1, 0, 0);
+				
 				GlStateManager.translate(0, -0.8f, 0);
 				return;
 			}

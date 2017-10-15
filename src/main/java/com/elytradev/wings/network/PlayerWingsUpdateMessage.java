@@ -58,7 +58,11 @@ public class PlayerWingsUpdateMessage extends Message {
 		if (e instanceof EntityPlayer) {
 			EntityPlayer subject = (EntityPlayer)e;
 			WingsPlayer wp = WingsPlayer.get(subject);
-			wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
+			if (rotationX == 0 && rotationY == 0 && rotationZ == 0 && rotationW == 0) {
+				wp.rotation = null;
+			} else {
+				wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
+			}
 			if (thruster == SetThrusterMessage.AFTERBURNER_SPEED) {
 				wp.thruster = 0;
 				wp.afterburner = true;

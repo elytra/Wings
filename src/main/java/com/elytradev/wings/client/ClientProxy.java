@@ -33,7 +33,9 @@ import com.elytradev.wings.client.sound.SelfSonicBoomStartSound;
 import com.elytradev.wings.client.sound.ThrusterSound;
 import com.elytradev.wings.item.ItemWings;
 import com.elytradev.wings.network.SetFlightStateMessage;
+import com.elytradev.wings.network.SetRotationMessage;
 import com.elytradev.wings.network.SetThrusterMessage;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
 import net.minecraft.client.Minecraft;
@@ -251,40 +253,42 @@ public class ClientProxy extends Proxy {
 	@SubscribeEvent
 	public void onRenderTick(RenderTickEvent e) {
 		if (e.phase == Phase.START) {
-			if (lastFlightState == FlightState.FLYING_ADVANCED) {
-				Minecraft mc = Minecraft.getMinecraft();
-				EntityPlayer ep = mc.player;
+			Minecraft mc = Minecraft.getMinecraft();
+			EntityPlayer ep = mc.player;
+			if (ep != null) {
 				WingsPlayer wp = WingsPlayer.get(ep);
-				if (wp.rotation == null) return;
-				if (mc.currentScreen != null) return;
-				int dxRaw = Mouse.getDX();
-				int dyRaw = Mouse.getDY();
-				
-				float sensitivity = mc.gameSettings.mouseSensitivity * 0.4f + 0.2f;
-				float mult = sensitivity * sensitivity * sensitivity * 8;
-				float dx = dxRaw * mult;
-				float dy = dyRaw * mult;
-
-				if (mc.gameSettings.invertMouse) {
-					dy *= -1;
-				}
-				
-				if (dx != 0) {
-					Quat4d yawQ = new Quat4d();
-					yawQ.set(new AxisAngle4d(0, 1, 0, WMath.deg2rad(dx)));
+				if (wp.flightState == FlightState.FLYING_ADVANCED) {
+					if (wp.rotation == null) return;
+					if (mc.currentScreen != null) return;
+					int dxRaw = Mouse.getDX();
+					int dyRaw = Mouse.getDY();
 					
-					wp.rotation.mul(wp.rotation, yawQ);
-				}
-				if (dy != 0) {
-					Quat4d pitchQ = new Quat4d();
-					pitchQ.set(new AxisAngle4d(1, 0, 0, WMath.deg2rad(-dy)));
+					float sensitivity = mc.gameSettings.mouseSensitivity * 0.4f + 0.2f;
+					float mult = sensitivity * sensitivity * sensitivity * 8;
+					float dx = dxRaw * mult;
+					float dy = dyRaw * mult;
+	
+					if (mc.gameSettings.invertMouse) {
+						dy *= -1;
+					}
 					
-					wp.rotation.mul(pitchQ, wp.rotation);
+					if (dx != 0) {
+						Quat4d yawQ = new Quat4d();
+						yawQ.set(new AxisAngle4d(0, 1, 0, WMath.deg2rad(dx)));
+						
+						wp.rotation.mul(wp.rotation, yawQ);
+					}
+					if (dy != 0) {
+						Quat4d pitchQ = new Quat4d();
+						pitchQ.set(new AxisAngle4d(1, 0, 0, WMath.deg2rad(-dy)));
+						
+						wp.rotation.mul(pitchQ, wp.rotation);
+					}
+					
+					// for frustrum culling and correct facing when leaving advanced mode
+					ep.rotationYaw = ep.prevRotationYaw = (float)(WMath.rad2deg(WMath.getYaw(wp.rotation))+180);
+					ep.rotationPitch = ep.prevRotationPitch = (float)(WMath.rad2deg(WMath.getPitch(wp.rotation)));
 				}
-				
-				// for frustrum culling and correct facing when leaving advanced mode
-				ep.rotationYaw = ep.prevRotationYaw = (float)(WMath.rad2deg(WMath.getYaw(wp.rotation))+180);
-				ep.rotationPitch = ep.prevRotationPitch = (float)(-WMath.rad2deg(WMath.getPitch(wp.rotation)));
 			}
 		}
 	}
@@ -292,10 +296,22 @@ public class ClientProxy extends Proxy {
 	@SubscribeEvent
 	public void onClientTick(ClientTickEvent e) {
 		if (e.phase == Phase.START) {
-			if (lastFlightState == FlightState.FLYING_ADVANCED) {
-				// handle the events ourselves to suppress unwanted "universal" keybinds
-				processKeyboard();
-				processMouse();
+			Minecraft mc = Minecraft.getMinecraft();
+			EntityPlayer ep = mc.player;
+			if (ep != null) {
+				WingsPlayer wp = WingsPlayer.get(ep);
+				if (wp.flightState == FlightState.FLYING_ADVANCED) {
+					// handle the events ourselves to suppress unwanted "universal" keybinds
+					processKeyboard();
+					processMouse();
+					
+					if (!Objects.equal(wp.prevRotation, wp.rotation))  {
+						if (wp.prevRotation != null && wp.rotation != null) {
+							if (wp.rotation.epsilonEquals(wp.prevRotation, 0.001)) return;
+						}
+						new SetRotationMessage(wp.rotation).sendToServer();
+					}
+				}
 			}
 		} else if (e.phase == Phase.END) {
 			Minecraft mc = Minecraft.getMinecraft();
@@ -472,6 +488,8 @@ public class ClientProxy extends Proxy {
 					wp.flightState = newState;
 					new SetFlightStateMessage(newState).sendToServer();
 				}
+			} else {
+				lastFlightState = FlightState.NONE;
 			}
 		}
 	}
@@ -638,7 +656,7 @@ public class ClientProxy extends Proxy {
 				e.setRoll(0);
 				e.setYaw(0);
 				e.setPitch(0);
-				if (Minecraft.getMinecraft().gameSettings.thirdPersonView == 0) {
+				if (Minecraft.getMinecraft().gameSettings.thirdPersonView != 2) {
 					Rendering.rotate(wp.prevRotation, wp.rotation, (float)e.getRenderPartialTicks());
 				}
 			}

@@ -43,15 +43,15 @@ public class WMath {
 	}
 	
 	public static double getYaw(Quat4d quat) {
-		return getGimbalPole(quat) == 0 ? atan2(2 * (quat.y * quat.w + quat.x * quat.z), 1 - 2 * (quat.y * quat.y + quat.x * quat.x)) : 0;
+		return atan2(2f * quat.y * quat.w - 2 * quat.z * quat.x, 1 - 2 * (quat.y * quat.y) - 2 * (quat.x * quat.x));
 	}
 	
 	public static double getPitch(Quat4d quat) {
-		return getGimbalPole(quat) == 0 ? atan2(2 * (quat.w * quat.z + quat.y * quat.x), 1 - 2 * (quat.x * quat.x + quat.z * quat.z)) : getGimbalPole(quat) * 2f * atan2(quat.y, quat.w);
+		return asin(2 * quat.z * quat.y + 2 * quat.x * quat.w);
 	}
 	
 	public static double getRoll(Quat4d quat) {
-		return getGimbalPole(quat) == 0 ? asin(clamp(2 * (quat.w * quat.x - quat.z * quat.y), -1, 1)) : getGimbalPole(quat) * PI * 0.5;
+		return -atan2(2f * quat.z * quat.w - 2 * quat.y * quat.x, 1 - 2 * (quat.z * quat.z) - 2 * (quat.x * quat.x));
 	}
 	
 	
