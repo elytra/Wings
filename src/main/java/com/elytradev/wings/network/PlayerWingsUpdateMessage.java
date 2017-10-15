@@ -20,6 +20,7 @@ public class PlayerWingsUpdateMessage extends Message {
 	private int entityId;
 	@MarshalledAs("f32")
 	private float thruster;
+	
 	@MarshalledAs("f64")
 	private double rotationX;
 	@MarshalledAs("f64")
@@ -28,6 +29,20 @@ public class PlayerWingsUpdateMessage extends Message {
 	private double rotationZ;
 	@MarshalledAs("f64")
 	private double rotationW;
+	
+	@MarshalledAs("f64")
+	private double motionX;
+	@MarshalledAs("f64")
+	private double motionY;
+	@MarshalledAs("f64")
+	private double motionZ;
+	
+	@MarshalledAs("f32")
+	private float motionYaw;
+	@MarshalledAs("f32")
+	private float motionPitch;
+	@MarshalledAs("f32")
+	private float motionRoll;
 	
 	public PlayerWingsUpdateMessage(NetworkContext ctx) {
 		super(ctx);
@@ -62,6 +77,14 @@ public class PlayerWingsUpdateMessage extends Message {
 				wp.rotation = null;
 			} else {
 				wp.rotation = new Quat4d(rotationX, rotationY, rotationZ, rotationW);
+				
+				wp.motionYaw = motionYaw;
+				wp.motionPitch = motionPitch;
+				wp.motionRoll = motionRoll;
+				
+				wp.player.motionX = motionX;
+				wp.player.motionY = motionY;
+				wp.player.motionZ = motionZ;
 			}
 			if (thruster == SetThrusterMessage.AFTERBURNER_SPEED) {
 				wp.thruster = 0;

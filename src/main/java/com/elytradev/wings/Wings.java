@@ -11,7 +11,7 @@ import com.elytradev.wings.item.ItemMetalElytra;
 import com.elytradev.wings.item.ItemMetalJetElytra;
 import com.elytradev.wings.network.PlayerWingsUpdateMessage;
 import com.elytradev.wings.network.SetFlightStateMessage;
-import com.elytradev.wings.network.SetRotationMessage;
+import com.elytradev.wings.network.SetRotationAndSpeedMessage;
 import com.elytradev.wings.network.SetThrusterMessage;
 import com.elytradev.wings.network.SonicBoomEffectMessage;
 import com.elytradev.wings.tile.TileEntityConverter;
@@ -98,7 +98,7 @@ public class Wings {
 		network = NetworkContext.forChannel("wings");
 		network.register(SetFlightStateMessage.class);
 		network.register(SetThrusterMessage.class);
-		network.register(SetRotationMessage.class);
+		network.register(SetRotationAndSpeedMessage.class);
 		network.register(PlayerWingsUpdateMessage.class);
 		network.register(SonicBoomEffectMessage.class);
 		NetworkRegistry.INSTANCE.registerGuiHandler(this, new WingsGuiHandler());

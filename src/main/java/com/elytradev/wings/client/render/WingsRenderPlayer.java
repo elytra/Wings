@@ -37,6 +37,10 @@ public class WingsRenderPlayer extends RenderPlayer {
 	public WingsRenderPlayer(RenderPlayer delegate) {
 		super(delegate.getRenderManager());
 		this.delegate = delegate;
+		
+		this.layerRenderers = delegate.layerRenderers;
+		this.brightnessBuffer = delegate.brightnessBuffer;
+		this.mainModel = delegate.mainModel;
 	}
 
 	

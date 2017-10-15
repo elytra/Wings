@@ -33,9 +33,8 @@ import com.elytradev.wings.client.sound.SelfSonicBoomStartSound;
 import com.elytradev.wings.client.sound.ThrusterSound;
 import com.elytradev.wings.item.ItemWings;
 import com.elytradev.wings.network.SetFlightStateMessage;
-import com.elytradev.wings.network.SetRotationMessage;
+import com.elytradev.wings.network.SetRotationAndSpeedMessage;
 import com.elytradev.wings.network.SetThrusterMessage;
-import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
 import net.minecraft.client.Minecraft;
@@ -52,6 +51,8 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.ItemModelMesher;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.GlStateManager.DestFactor;
+import net.minecraft.client.renderer.GlStateManager.SourceFactor;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
@@ -67,6 +68,7 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
@@ -254,8 +256,8 @@ public class ClientProxy extends Proxy {
 	public void onRenderTick(RenderTickEvent e) {
 		if (e.phase == Phase.START) {
 			Minecraft mc = Minecraft.getMinecraft();
-			EntityPlayer ep = mc.player;
-			if (ep != null) {
+			if (mc.player != null) {
+				EntityPlayer ep = mc.player;
 				WingsPlayer wp = WingsPlayer.get(ep);
 				if (wp.flightState == FlightState.FLYING_ADVANCED) {
 					if (wp.rotation == null) return;
@@ -290,6 +292,18 @@ public class ClientProxy extends Proxy {
 					ep.rotationPitch = ep.prevRotationPitch = (float)(WMath.rad2deg(WMath.getPitch(wp.rotation)));
 				}
 			}
+			
+			if (mc.world != null) {
+				for (EntityPlayer ep : mc.world.playerEntities) {
+					Optional<WingsPlayer> opt = WingsPlayer.getIfExists(ep);
+					if (opt.isPresent()) {
+						WingsPlayer wp = opt.get();
+						if (wp.rotation != null) {
+							ep.world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL, ep.posX, ep.posY, ep.posZ, 0, 0, 0);
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -305,12 +319,7 @@ public class ClientProxy extends Proxy {
 					processKeyboard();
 					processMouse();
 					
-					if (!Objects.equal(wp.prevRotation, wp.rotation))  {
-						if (wp.prevRotation != null && wp.rotation != null) {
-							if (wp.rotation.epsilonEquals(wp.prevRotation, 0.001)) return;
-						}
-						new SetRotationMessage(wp.rotation).sendToServer();
-					}
+					new SetRotationAndSpeedMessage(wp).sendToServer();
 				}
 			}
 		} else if (e.phase == Phase.END) {
@@ -343,11 +352,11 @@ public class ClientProxy extends Proxy {
 					if (!mc.gameSettings.keyBindJump.isKeyDown()) {
 						jumpTainted = false;
 					}
-					if (mc.gameSettings.keyBindJump.isKeyDown() && !jumpTainted && lastFlightState == FlightState.NONE) {
+					if (mc.gameSettings.keyBindJump.isKeyDown() || keyToggleAdvanced.isKeyDown() && !jumpTainted && lastFlightState == FlightState.NONE) {
 						if (!ep.onGround && ep.motionY < 0 && !ep.isInWater()) {
 							mc.getSoundHandler().playSound(new ThrusterSound(ep));
 							mc.getSoundHandler().playSound(new QuietElytraSound(ep));
-							newState = FlightState.FLYING;
+							newState = keyToggleAdvanced.isKeyDown() ? FlightState.FLYING_ADVANCED : FlightState.FLYING;
 						} else {
 							newState = lastFlightState;
 							jumpTainted = true;
@@ -468,10 +477,10 @@ public class ClientProxy extends Proxy {
 					}
 					
 					if (keyPitchUp.isKeyDown()) {
-						wp.motionPitch += 0.5f;
+						wp.motionPitch -= 0.5f;
 					}
 					if (keyPitchDown.isKeyDown()) {
-						wp.motionPitch -= 0.5f;
+						wp.motionPitch += 0.5f;
 					}
 				}
 				if (newState != lastFlightState) {
@@ -803,20 +812,22 @@ public class ClientProxy extends Proxy {
 				
 				GlStateManager.pushMatrix();
 				FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
-				String str;
-				if (chest.getItem() instanceof ItemWings && ((ItemWings)chest.getItem()).isFuelDepleted(chest)) {
-					str = I18n.format("hud.wings.thruster.no_fuel");
-				} else if (wp.afterburner) {
-					str = I18n.format("hud.wings.thruster.afterburner");
-				} else if (wp.thruster > 0) {
-					str = I18n.format("hud.wings.thruster", Math.round(wp.thruster*100));
-				} else {
-					str = I18n.format("hud.wings.thruster.off");
+				if (chest.getItem() instanceof ItemWings && ((ItemWings)chest.getItem()).hasThruster()) {
+					String str;
+					if (((ItemWings)chest.getItem()).isFuelDepleted(chest)) {
+						str = I18n.format("hud.wings.thruster.no_fuel");
+					} else if (wp.afterburner) {
+						str = I18n.format("hud.wings.thruster.afterburner");
+					} else if (wp.thruster > 0) {
+						str = I18n.format("hud.wings.thruster", Math.round(wp.thruster*100));
+					} else {
+						str = I18n.format("hud.wings.thruster.off");
+					}
+					int w = fr.getStringWidth(str);
+					GlStateManager.translate(interp*(w+5), 0, 0);
+					fr.drawStringWithShadow(str, -w, y, -1);
+					y += 12;
 				}
-				int w = fr.getStringWidth(str);
-				GlStateManager.translate(interp*(w+5), 0, 0);
-				fr.drawStringWithShadow(str, -w, y, -1);
-				y += 12;
 				GlStateManager.popMatrix();
 			}
 		}
@@ -844,6 +855,10 @@ public class ClientProxy extends Proxy {
 		
 		float minV = tex.getInterpolatedV(flipped ? h : 0);
 		float maxV = tex.getInterpolatedV(flipped ? 0 : h);
+		
+		GlStateManager.color(1, 1, 1);
+		GlStateManager.enableBlend();
+		GlStateManager.blendFunc(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
 		
 		bb.begin(7, DefaultVertexFormats.POSITION_TEX);
 		bb.pos(x + 0, y + h, 0).tex(minU, maxV).endVertex();

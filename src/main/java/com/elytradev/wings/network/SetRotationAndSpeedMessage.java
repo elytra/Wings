@@ -14,7 +14,7 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.relauncher.Side;
 
 @ReceivedOn(Side.SERVER)
-public class SetRotationMessage extends Message {
+public class SetRotationAndSpeedMessage extends Message {
 
 	@MarshalledAs("f64")
 	private double rotationX;
@@ -25,18 +25,38 @@ public class SetRotationMessage extends Message {
 	@MarshalledAs("f64")
 	private double rotationW;
 	
-	public SetRotationMessage(NetworkContext ctx) {
+	@MarshalledAs("f64")
+	private double motionX;
+	@MarshalledAs("f64")
+	private double motionY;
+	@MarshalledAs("f64")
+	private double motionZ;
+	
+	@MarshalledAs("f32")
+	private float motionYaw;
+	@MarshalledAs("f32")
+	private float motionPitch;
+	@MarshalledAs("f32")
+	private float motionRoll;
+	
+	public SetRotationAndSpeedMessage(NetworkContext ctx) {
 		super(ctx);
 	}
 	
-	public SetRotationMessage(Quat4d rotation) {
+	public SetRotationAndSpeedMessage(WingsPlayer wp) {
 		super(Wings.inst.network);
-		if (rotation != null) {
-			this.rotationX = rotation.x;
-			this.rotationY = rotation.y;
-			this.rotationZ = rotation.z;
-			this.rotationW = rotation.w;
+		if (wp.rotation != null) {
+			this.rotationX = wp.rotation.x;
+			this.rotationY = wp.rotation.y;
+			this.rotationZ = wp.rotation.z;
+			this.rotationW = wp.rotation.w;
 		}
+		this.motionX = wp.player.motionX;
+		this.motionY = wp.player.motionY;
+		this.motionZ = wp.player.motionZ;
+		this.motionYaw = wp.motionYaw;
+		this.motionPitch = wp.motionPitch;
+		this.motionRoll = wp.motionRoll;
 	}
 	
 	@Override
@@ -51,12 +71,6 @@ public class SetRotationMessage extends Message {
 				!Double.isFinite(rotationW)) {
 			Wings.log.warn("{} sent invalid (non-finite) rotations", ep.getName());
 			ep.connection.disconnect(new TextComponentTranslation("multiplayer.disconnect.wings.invalid_roll"));
-			return;
-		}
-		wp.updatesThisTick++;
-		if (wp.updatesThisTick > 5) {
-			Wings.log.warn("{} is sending updates too frequently ({} packets since last tick)", ep.getName(), wp.updatesThisTick);
-			new PlayerWingsUpdateMessage(wp).sendTo(ep);
 			return;
 		}
 		if (rotationX == 0 && rotationY == 0 && rotationZ == 0 && rotationW == 0) {

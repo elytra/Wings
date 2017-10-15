@@ -73,6 +73,9 @@ public final class WingsPlayer {
 	public boolean sonicBoom;
 	
 	public Quat4d prevRotation;
+	public float prevMotionRoll;
+	public float prevMotionYaw;
+	public float prevMotionPitch;
 	public float lastTickThruster;
 	public boolean lastTickAfterburner;
 	public boolean lastTickBrake;
@@ -92,6 +95,9 @@ public final class WingsPlayer {
 		lastTickAfterburner = afterburner;
 		lastTickBrake = brake;
 		lastTickSonicBoom = sonicBoom;
+		prevMotionYaw = motionYaw;
+		prevMotionPitch = motionPitch;
+		prevMotionRoll = motionRoll;
 		updatesThisTick = 0;
 		
 		if (!player.world.isRemote || player.isUser()) {
@@ -189,12 +195,6 @@ public final class WingsPlayer {
 			} else {
 				setFlag.invoke(player, 7, false);
 			}
-		}
-		
-		if (!player.isSneaking() && flightState == FlightState.FLYING_ADVANCED) {
-			player.motionX = player.motionY = player.motionZ = 0;
-			player.setLocationAndAngles((Math.floor(player.posX/5)+0.5)*5, (Math.floor(player.posY/5)+0.5)*5, (Math.floor(player.posZ/5)+0.5)*5, player.rotationYaw, player.rotationPitch);
-			allowFlight();
 		}
 
 		if (sonicBoom) {
