@@ -43,7 +43,7 @@ public final class WingsPlayer {
 	public static final double END_BOOM_STATE_SQ = END_BOOM_STATE*END_BOOM_STATE;
 	
 	// weakKeys implies identity comparison
-	private static final Map<EntityPlayer, WingsPlayer> map = new MapMaker().weakKeys().concurrencyLevel(1).makeMap();
+	private static final Map<EntityPlayer, WingsPlayer> map = new MapMaker().weakKeys().concurrencyLevel(2).makeMap();
 	
 	private static final Accessor<Integer> floatingTickCount = Accessors.findField(NetHandlerPlayServer.class, "field_147365_f", "floatingTickCount");
 	private static final Invoker setFlag = Invokers.findMethod(Entity.class, "setFlag", "func_70052_a", int.class, boolean.class);
@@ -123,7 +123,7 @@ public final class WingsPlayer {
 		
 		if (flightState != FlightState.NONE) {
 			player.fallDistance = 0;
-			if (player.isCollidedHorizontally || player.isCollidedVertically) {
+			if (player.collidedHorizontally || player.collidedVertically) {
 				int dmg = (int)(speed*10)-3;
 				if (dmg > 0) {
 					player.playSound(dmg > 3 ? SoundEvents.ENTITY_GENERIC_BIG_FALL : SoundEvents.ENTITY_GENERIC_SMALL_FALL, 1, 1);

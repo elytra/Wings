@@ -32,7 +32,7 @@ public class SonicBoomEffectMessage extends Message {
 	protected void handle(EntityPlayer player) {
 		Entity e = player.world.getEntityByID(entityId);
 		if (e != null) {
-			boolean close = player.getDistanceSqToEntity(e) < 1024;
+			boolean close = player.getDistanceSq(e) < 1024;
 			Minecraft.getMinecraft().player.playSound(Wings.SONIC_BOOM, close ? 1f : 0.5f, 1f);
 		}
 	}
