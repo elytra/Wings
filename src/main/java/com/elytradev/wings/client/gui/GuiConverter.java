@@ -88,16 +88,23 @@ public class GuiConverter extends GuiContainer {
 		int fh = (int)Math.floor(amt*h);
 		
 		int fullSquares = fh/16;
+		int col = fluid.getFluid().getFluid().getColor(fluid.getFluid());
 		if (fluid.getFluid().getFluid().isGaseous(fluid.getFluid())) {
-			
+			int yc = y;
+			for (int i = 0; i < fullSquares; i++) {
+				ClientProxy.drawTexturedRect(x, yc, tex, 16, 16, col, false);
+				yc += 16;
+			}
+			int lastHeight = fh%16;
+			ClientProxy.drawTexturedRect(x, yc, tex, 16, lastHeight, col, true);
 		} else {
 			int yc = y+h;
 			for (int i = 0; i < fullSquares; i++) {
-				ClientProxy.drawTexturedRect(x, yc-16, tex, 16, 16, false);
+				ClientProxy.drawTexturedRect(x, yc-16, tex, 16, 16, col, false);
 				yc -= 16;
 			}
 			int lastHeight = fh%16;
-			ClientProxy.drawTexturedRect(x, yc-lastHeight, tex, 16, lastHeight, true);
+			ClientProxy.drawTexturedRect(x, yc-lastHeight, tex, 16, lastHeight, col, true);
 		}
 	}
 

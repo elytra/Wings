@@ -45,7 +45,7 @@ import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.OreDictionary;
 
-@Mod(modid=Wings.MODID, name=Wings.NAME, version=Wings.VERSION)
+@Mod(modid=Wings.MODID, name=Wings.NAME, version=Wings.VERSION, guiFactory="com.elytradev.wings.client.WingsGuiFactory")
 public class Wings {
 	public static final Logger log = LogManager.getLogger("Wings");
 	

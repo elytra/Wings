@@ -47,4 +47,18 @@ hud.wings.thruster.no_fuel=Thrust: §8NO FUEL
 
 subtitles.wings.sonic_boom=Sonic boom
 
-attack.
+gui.wings.config.title=Wings Configuration
+
+gui.wings.config.on=On
+gui.wings.config.off=Off
+
+gui.wings.config.lazy=Lazy
+gui.wings.config.eager=Eager
+
+gui.wings.config.camera.disabled=Disabled
+gui.wings.config.camera.cameraspace=Free
+gui.wings.config.camera.worldspace=Standard
+
+gui.wings.config.startGliding=Start Gliding Control:
+gui.wings.config.mouseCam=Mouse Rotation:
+gui.wings.config.keyboardCam=Keyboard Rotation:

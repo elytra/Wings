@@ -780,11 +780,12 @@ public class ClientProxy extends Proxy {
 							double amt = fluidAmt/prop.getCapacity();
 							double px = amt*w;
 							int full = (int)(px/16);
+							int col = template.getFluid().getColor(template);
 							GlStateManager.color(1, 1, 1);
 							for (int j = 0; j < full; j++) {
-								drawTexturedRect(x+5+(j*16), y+1, tas, 16, 10, false);
+								drawTexturedRect(x+5+(j*16), y+1, tas, 16, 10, col, false);
 							}
-							drawTexturedRect(x+5+(full*16), y+1, tas, px-(full*16), 10, false);
+							drawTexturedRect(x+5+(full*16), y+1, tas, px-(full*16), 10, col, false);
 						}
 						Gui.drawRect(x+5+(w/4), y, x+(w/4)+6, y+5, 0xFF880000);
 						Gui.drawRect(x+5+(w/2), y, x+(w/2)+6, y+9, 0xFF880000);
@@ -846,7 +847,7 @@ public class ClientProxy extends Proxy {
 		}
 	}
 
-	public static void drawTexturedRect(double x, double y, TextureAtlasSprite tex, double w, double h, boolean flipped) {
+	public static void drawTexturedRect(double x, double y, TextureAtlasSprite tex, double w, double h, int color, boolean flipped) {
 		Tessellator tess = Tessellator.getInstance();
 		BufferBuilder bb = tess.getBuffer();
 		
@@ -856,7 +857,7 @@ public class ClientProxy extends Proxy {
 		float minV = tex.getInterpolatedV(flipped ? h : 0);
 		float maxV = tex.getInterpolatedV(flipped ? 0 : h);
 		
-		GlStateManager.color(1, 1, 1);
+		GlStateManager.color(((color>>16)&0xFF)/255f, ((color>>8)&0xFF)/255f, (color&0xFF)/255f, ((color>>24)&0xFF)/255f);
 		GlStateManager.enableBlend();
 		GlStateManager.blendFunc(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
 		
