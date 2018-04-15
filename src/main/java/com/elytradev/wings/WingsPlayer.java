@@ -8,6 +8,7 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Map;
@@ -73,9 +74,15 @@ public final class WingsPlayer {
 	public boolean sonicBoom;
 	
 	public Quat4d prevRotation;
+	
 	public float prevMotionRoll;
 	public float prevMotionYaw;
 	public float prevMotionPitch;
+	
+	public double prevMotionX;
+	public double prevMotionY;
+	public double prevMotionZ;
+
 	public float lastTickThruster;
 	public boolean lastTickAfterburner;
 	public boolean lastTickBrake;
@@ -120,17 +127,23 @@ public final class WingsPlayer {
 		}
 		
 		double speed = (player.motionX * player.motionX) + (player.motionY * player.motionY) + (player.motionZ * player.motionZ);
+		double prevSpeed = (prevMotionX * prevMotionX) + (prevMotionY * prevMotionY) + (prevMotionZ * prevMotionZ);
 		
 		if (flightState != FlightState.NONE) {
 			player.fallDistance = 0;
-			if (player.collidedHorizontally || player.collidedVertically) {
-				int dmg = (int)(speed*10)-3;
+			double speedDiff = prevSpeed-speed;
+			if (speedDiff > 10) {
+				int dmg = (int)(MathHelper.sqrt(speedDiff)*10)-3;
 				if (dmg > 0) {
 					player.playSound(dmg > 3 ? SoundEvents.ENTITY_GENERIC_BIG_FALL : SoundEvents.ENTITY_GENERIC_SMALL_FALL, 1, 1);
 					player.attackEntityFrom(DamageSource.FLY_INTO_WALL, dmg);
 				}
 			}
 		}
+		
+		prevMotionX = player.motionX;
+		prevMotionY = player.motionY;
+		prevMotionZ = player.motionZ;
 		
 		ItemStack chest = player.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
 		if (chest.getItem() instanceof ItemWings) {
@@ -165,7 +178,7 @@ public final class WingsPlayer {
 				setFlag.invoke(player, 7, true);
 				if (wings.hasThruster()) {
 					double thrust = 0;
-					if (afterburner && wings.burnFuel(chest, 14, player.world.isRemote)) {
+					if (afterburner && wings.hasAfterburner() && wings.burnFuel(chest, 14, player.world.isRemote)) {
 						thrust = 0.1;
 					} else if (thruster > 0 && wings.burnFuel(chest, (int)Math.ceil(3*thruster), player.world.isRemote)) {
 						thrust = thruster*0.05;
@@ -191,9 +204,17 @@ public final class WingsPlayer {
 						player.motionY *= 1.5;
 						player.motionZ *= 0.75;
 					}
+					
+					//setFlag.invoke(player, 7, false);
+					//player.motionX = player.motionZ = 0;
+					//player.motionY = 0;
 				}
 			} else {
 				setFlag.invoke(player, 7, false);
+			}
+			
+			if (player.isElytraFlying() && player.ticksExisted % 20 == 0 && chest.getItem().isDamageable()) {
+				chest.damageItem(1, player);
 			}
 		}
 

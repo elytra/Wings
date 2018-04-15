@@ -1,9 +1,21 @@
-# Temporary item names courtesy of Falkreon
-item.wings.leather_elytra.name=Flappy Wings
-item.wings.metal_elytra.name=Clanky Wings
-item.wings.metal_jet_elytra.name=Zoomy Wings
+item.wings.leather_elytra.name=Wings
+item.wings.metal_elytra.name=Reinforced Wings
+item.wings.metal_jet_elytra.name=Jet Wings
+item.wings.metal_electric_elytra.name=Electric Wings
 item.wings.goggles.name=Flight Goggles
 item.wings.goggles.hint=Allows you to go supersonic without dying
+item.wings.blueprint.name=Elytra Blueprint
+
+hint.glide=No propulsion; gliding only
+hint.jet=Self-propelled
+
+hint.breakable=Breaks over time
+hint.unbreakable=Cannot break
+
+hint.jetfuel=Consumes Jet Fuel
+hint.energy=Consumes energy
+
+hint.afterburner=Has an afterburner
 
 fluid.wings.jetfuel=Jet Fuel
 fluid.wings.empty=Empty

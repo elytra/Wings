@@ -5,8 +5,10 @@ import org.apache.logging.log4j.Logger;
 
 import com.elytradev.concrete.network.NetworkContext;
 import com.elytradev.wings.block.BlockConverter;
+import com.elytradev.wings.item.ItemBlueprint;
 import com.elytradev.wings.item.ItemGoggles;
 import com.elytradev.wings.item.ItemLeatherElytra;
+import com.elytradev.wings.item.ItemMetalElectricElytra;
 import com.elytradev.wings.item.ItemMetalElytra;
 import com.elytradev.wings.item.ItemMetalJetElytra;
 import com.elytradev.wings.network.PlayerWingsUpdateMessage;
@@ -44,6 +46,8 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.oredict.ShapedOreRecipe;
+import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 @Mod(modid=Wings.MODID, name=Wings.NAME, version=Wings.VERSION, guiFactory="com.elytradev.wings.client.WingsGuiFactory")
 public class Wings {
@@ -58,7 +62,9 @@ public class Wings {
 	public static ItemLeatherElytra LEATHER_ELYTRA;
 	public static ItemMetalElytra METAL_ELYTRA;
 	public static ItemMetalJetElytra METAL_JET_ELYTRA;
+	public static ItemMetalElectricElytra METAL_ELECTRIC_ELYTRA;
 	public static ItemGoggles GOGGLES;
+	public static ItemBlueprint BLUEPRINT;
 	
 	public static Fluid JET_FUEL;
 	
@@ -68,6 +74,7 @@ public class Wings {
 	public static SoundEvent SONIC_BOOM;
 	public static SoundEvent SONIC_BOOM_SELF;
 	public static SoundEvent SONIC_BOOM_SELF_START;
+	public static SoundEvent CHIME;
 	
 	public static DamageSource SUPERSONIC_NO_GOGGLES = new DamageSource("wings.supersonic_no_goggles");
 	
@@ -152,41 +159,70 @@ public class Wings {
 	
 	@SubscribeEvent
 	public void onRegisterRecipes(RegistryEvent.Register<IRecipe> e) {
-		e.getRegistry().register(new RecipeWings(null, new ItemStack(LEATHER_ELYTRA),
-				" l ",
-				"bBb",
-				'l', Items.LEATHER,
-				'b', Items.BANNER,
-				'B', Blocks.BEDROCK)
-				.setRegistryName("create_leather_elytra"));
-		e.getRegistry().register(new RecipeWings(null, new ItemStack(METAL_ELYTRA),
-				"ili",
-				"bBb",
-				'i', "ingotIron",
-				'l', Items.LEATHER,
-				'b', Items.BANNER,
-				'B', Blocks.BEDROCK)
-				.setRegistryName("create_metal_elytra"));
-		e.getRegistry().register(new RecipeWings(null, new ItemStack(METAL_JET_ELYTRA),
-				"ili",
-				"bBb",
-				"B B",
-				'i', "ingotIron",
-				'l', Items.LEATHER,
-				'b', Items.BANNER,
-				'B', Blocks.BEDROCK)
-				.setRegistryName("create_metal_jet_elytra"));
+		e.getRegistry().register(new ShapelessOreRecipe(null, BLUEPRINT,
+				"paper", "dyeBlue", Items.ELYTRA)
+				.setRegistryName("blueprint"));
 		
+		e.getRegistry().register(new RecipeWings(null, new ItemStack(LEATHER_ELYTRA),
+				"lwl",
+				"bwb",
+				"lBl",
+				'l', Items.LEATHER,
+				'b', Items.BANNER,
+				'w', "logWood",
+				'B', BLUEPRINT)
+				.setRegistryName("leather_elytra"));
 		e.getRegistry().register(new RecipeWings(null, new ItemStack(METAL_ELYTRA),
-				"iwi",
-				'w', LEATHER_ELYTRA,
-				'i', "ingotIron")
-				.setRegistryName("upgrade_leather_to_metal"));
+				"/i/",
+				"bib",
+				"lBl",
+				'i', "blockIron",
+				'/', "stickWood",
+				'b', Items.BANNER,
+				'l', Items.LEATHER,
+				'B', BLUEPRINT)
+				.setRegistryName("metal_elytra"));
 		e.getRegistry().register(new RecipeWings(null, new ItemStack(METAL_JET_ELYTRA),
-				"BwB",
-				'w', METAL_ELYTRA,
-				'B', Blocks.BEDROCK)
-				.setRegistryName("upgrade_metal_to_jet"));
+				"iIi",
+				"bfb",
+				"iBi",
+				'i', "ingotIron",
+				'b', Items.BANNER,
+				'I', "blockIron",
+				'f', Blocks.FURNACE,
+				'B', BLUEPRINT)
+				.setRegistryName("metal_jet_elytra"));
+		e.getRegistry().register(new RecipeWings(null, new ItemStack(METAL_ELECTRIC_ELYTRA),
+				"gIg",
+				"bRb",
+				"iBi",
+				'i', "ingotIron",
+				'b', Items.BANNER,
+				'I', "blockIron",
+				'R', "blockRedstone",
+				'g', "ingotGold",
+				'B', BLUEPRINT)
+				.setRegistryName("metal_electric_elytra"));
+		
+		
+		e.getRegistry().register(new ShapedOreRecipe(null, new ItemStack(GOGGLES),
+				" l ",
+				"l l",
+				"gig",
+				'l', Items.LEATHER,
+				'g', "paneGlassColorless",
+				'i', "ingotIron")
+				.setRegistryName("goggles"));
+		
+		
+		e.getRegistry().register(new ShapedOreRecipe(null, new ItemStack(CONVERTER),
+				"iii",
+				"fff",
+				"ggg",
+				'i', "ingotIron",
+				'f', Blocks.FURNACE,
+				'g', "ingotGold")
+				.setRegistryName("converter"));
 	}
 	
 	@SubscribeEvent
@@ -203,12 +239,11 @@ public class Wings {
 	@SubscribeEvent
 	public void onRegisterItems(RegistryEvent.Register<Item> e) {
 		e.getRegistry().register((LEATHER_ELYTRA = new ItemLeatherElytra())
-				.setMaxDamage(324)
+				.setMaxDamage(648)
 				.setUnlocalizedName("wings.leather_elytra")
 				.setRegistryName("leather_elytra"));
 		
 		e.getRegistry().register((METAL_ELYTRA = new ItemMetalElytra())
-				.setMaxDamage(648)
 				.setUnlocalizedName("wings.metal_elytra")
 				.setRegistryName("metal_elytra"));
 		
@@ -216,10 +251,18 @@ public class Wings {
 				.setUnlocalizedName("wings.metal_jet_elytra")
 				.setRegistryName("metal_jet_elytra"));
 		
+		e.getRegistry().register((METAL_ELECTRIC_ELYTRA = new ItemMetalElectricElytra())
+				.setUnlocalizedName("wings.metal_electric_elytra")
+				.setRegistryName("metal_electric_elytra"));
+		
 		
 		e.getRegistry().register((GOGGLES = new ItemGoggles())
 				.setUnlocalizedName("wings.goggles")
 				.setRegistryName("goggles"));
+		
+		e.getRegistry().register((BLUEPRINT = new ItemBlueprint())
+				.setUnlocalizedName("wings.blueprint")
+				.setRegistryName("blueprint"));
 		
 		e.getRegistry().register(new ItemBlock(CONVERTER).setRegistryName("converter"));
 	}
@@ -238,6 +281,8 @@ public class Wings {
 				.setRegistryName("sonic_boom_self"));
 		e.getRegistry().register(SONIC_BOOM_SELF_START = new SoundEvent(new ResourceLocation("wings", "sonic_boom_self_start"))
 				.setRegistryName("sonic_boom_self_start"));
+		e.getRegistry().register(CHIME = new SoundEvent(new ResourceLocation("wings", "chime"))
+				.setRegistryName("chime"));
 	}
 	
 	@SubscribeEvent

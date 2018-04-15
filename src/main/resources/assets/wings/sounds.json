@@ -18,5 +18,8 @@
 	},
 	"thrust": {
 		"sounds": [ "wings:thrust" ]
+	},
+	"chime": {
+		"sounds": [ "wings:chime" ]
 	}
 }

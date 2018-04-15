@@ -31,6 +31,7 @@ import com.elytradev.wings.client.sound.AfterburnerStartSound;
 import com.elytradev.wings.client.sound.QuietElytraSound;
 import com.elytradev.wings.client.sound.SelfSonicBoomStartSound;
 import com.elytradev.wings.client.sound.ThrusterSound;
+import com.elytradev.wings.item.ItemMetalElectricElytra;
 import com.elytradev.wings.item.ItemWings;
 import com.elytradev.wings.network.SetFlightStateMessage;
 import com.elytradev.wings.network.SetRotationAndSpeedMessage;
@@ -68,7 +69,7 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
@@ -84,6 +85,8 @@ import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.client.settings.IKeyConflictContext;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.FluidTankProperties;
@@ -97,6 +100,8 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.RenderTickEvent;
 
 public class ClientProxy extends Proxy {
 
+	private static final ResourceLocation ENERGY = new ResourceLocation("wings", "textures/gui/energy.png");
+	
 	private KeyBinding keyToggleAdvanced;
 	private KeyBinding keyRollCounterclockwise;
 	private KeyBinding keyRollClockwise;
@@ -152,15 +157,18 @@ public class ClientProxy extends Proxy {
 		ForgeHooksClient.registerTESRItemStack(Wings.LEATHER_ELYTRA, 0, TileEntity.class);
 		ForgeHooksClient.registerTESRItemStack(Wings.METAL_ELYTRA, 0, TileEntity.class);
 		ForgeHooksClient.registerTESRItemStack(Wings.METAL_JET_ELYTRA, 0, TileEntity.class);
+		ForgeHooksClient.registerTESRItemStack(Wings.METAL_ELECTRIC_ELYTRA, 0, TileEntity.class);
 		
 		ItemModelMesher imm = Minecraft.getMinecraft().getRenderItem().getItemModelMesher();
 		
 		imm.register(Wings.LEATHER_ELYTRA, new DummyMeshDefinition("wings:leather_elytra#inventory"));
 		imm.register(Wings.METAL_ELYTRA, new DummyMeshDefinition("wings:metal_elytra#inventory"));
 		imm.register(Wings.METAL_JET_ELYTRA, new DummyMeshDefinition("wings:metal_jet_elytra#inventory"));
+		imm.register(Wings.METAL_ELECTRIC_ELYTRA, new DummyMeshDefinition("wings:metal_electric_elytra#inventory"));
 		
 		imm.register(Item.getItemFromBlock(Wings.CONVERTER), new DummyMeshDefinition("wings:converter#inventory"));
 		imm.register(Wings.GOGGLES, new DummyMeshDefinition("wings:goggles#inventory"));
+		imm.register(Wings.BLUEPRINT, new DummyMeshDefinition("wings:blueprint#inventory"));
 		
 		String cat = "key.categories.wings";
 		String catF = cat+".advanced";
@@ -246,6 +254,7 @@ public class ClientProxy extends Proxy {
 	private int flightTicks = 0;
 	private int advancedFlightTicks = 0;
 	private IFluidTankProperties[] lastTickFluidProperties = null;
+	private int lastTickEnergy = -1;
 	
 	private boolean wheelUp;
 	private boolean wheelDown;
@@ -299,7 +308,7 @@ public class ClientProxy extends Proxy {
 					if (opt.isPresent()) {
 						WingsPlayer wp = opt.get();
 						if (wp.rotation != null) {
-							ep.world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL, ep.posX, ep.posY, ep.posZ, 0, 0, 0);
+							//ep.world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL, ep.posX, ep.posY, ep.posZ, 0, 0, 0);
 						}
 					}
 				}
@@ -416,7 +425,7 @@ public class ClientProxy extends Proxy {
 								oldThrusterValue = 0;
 							}
 							
-							wp.afterburner = keyAfterburner.isKeyDown();
+							wp.afterburner = keyAfterburner.isKeyDown() && wings.hasAfterburner();
 							// isKeyDown checks KeyModifier, which seems to be broken with our input code
 							wp.brake = pressed.get(keyBrake);
 							
@@ -719,7 +728,28 @@ public class ClientProxy extends Proxy {
 				partial *= -1;
 			}
 			float interp = MathHelper.sin((Math.min(advancedFlightTicks+partial, 10)/20f)*((float)Math.PI));
-			if (e.getType() == ElementType.HOTBAR) {
+			if (e.getType() == ElementType.CROSSHAIRS) {
+				e.setCanceled(true);
+				Minecraft.getMinecraft().renderEngine.bindTexture(Gui.ICONS);
+				GlStateManager.enableBlend();
+				GlStateManager.tryBlendFuncSeparate(SourceFactor.ONE_MINUS_DST_COLOR, DestFactor.ONE_MINUS_SRC_COLOR, SourceFactor.ONE, DestFactor.ZERO);
+				GlStateManager.pushMatrix();
+				GlStateManager.translate(e.getResolution().getScaledWidth_double()/2, e.getResolution().getScaledHeight_double()/2, 0);
+				GlStateManager.disableTexture2D();
+				float stretch = interp*6;
+				float rot = 0;
+				WingsPlayer wp = WingsPlayer.get(Minecraft.getMinecraft().player);
+				if (wp.rotation != null) {
+					rot = (float) (WMath.rad2deg(WMath.getRoll(wp.rotation)) * interp);
+				}
+				GlStateManager.rotate(rot, 0, 0, 1);
+				Rendering.drawRect(-5-stretch, -0.5f, 5+stretch, 0.5f, 0xFFFFFFFF);
+				Rendering.drawRect(-0.5f, -4, 0.5f, -0.5f, 0xFFFFFFFF);
+				Rendering.drawRect(-0.5f, 0.5f, 0.5f, 4, 0xFFFFFFFF);
+				GlStateManager.enableTexture2D();
+				GlStateManager.popMatrix();
+				GlStateManager.disableBlend();
+			} else if (e.getType() == ElementType.HOTBAR) {
 				if (advancedFlightTicks > 10) {
 					e.setCanceled(true);
 				} else {
@@ -747,6 +777,8 @@ public class ClientProxy extends Proxy {
 			WingsPlayer wp = WingsPlayer.get(ep);
 			ItemStack chest = ep.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
 			int y = 5;
+			int barWidth = 60;
+			int x = -(barWidth + 5);
 			if (flightTicks > 0) {
 				double mY = ep.onGround ? 0 : ep.motionY;
 				double speed = ep.motionX * ep.motionX + mY * mY + ep.motionZ * ep.motionZ;
@@ -758,38 +790,45 @@ public class ClientProxy extends Proxy {
 				if (chest.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null)) {
 					IFluidHandlerItem ifhi = chest.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null);
 					GlStateManager.pushMatrix();
-					int w = 60;
-					int x = -(w + 5);
 					GlStateManager.translate(interp*(-x), 0, 0);
 					IFluidTankProperties[] props = ifhi.getTankProperties();
 					for (int i = 0; i < props.length; i++) {
 						IFluidTankProperties prop = props[i];
 						IFluidTankProperties lastTickProp = lastTickFluidProperties != null && lastTickFluidProperties.length == props.length ? lastTickFluidProperties[i] : null;
-						Gui.drawRect(x+4, y, x+w+6, y+12, 0xFF880000);
-						Gui.drawRect(x+5, y+1, x+w+5, y+11, 0xFF222222);
 						FluidStack content = prop.getContents();
-						FluidStack lastTick = lastTickProp == null ? null : lastTickProp.getContents();
-						if (content != null || lastTick != null) {
-							FluidStack template = content == null ? lastTick : content;
-							TextureAtlasSprite tas = Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite(template.getFluid().getStill(template).toString());
-							Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-							double fluidAmt = template.amount;
-							if (lastTick != null) {
-								fluidAmt = lastTick.amount + ((lastTick.amount - template.amount) * e.getPartialTicks());
+						FluidStack lastTickContent = lastTickProp == null ? null : lastTickProp.getContents();
+						
+						TextureAtlasSprite tas = null;
+						
+						float amt = 0;
+						float max = 1;
+						int color = -1;
+						if (content != null || lastTickContent != null) {
+							FluidStack template = content == null ? lastTickContent : content;
+							amt = template.amount;
+							if (lastTickContent != null) {
+								amt = lastTickContent.amount + ((lastTickContent.amount - template.amount) * e.getPartialTicks());
 							}
-							double amt = fluidAmt/prop.getCapacity();
-							double px = amt*w;
+							max = prop.getCapacity();
+							tas = Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite(template.getFluid().getStill(template).toString());
+							color = template.getFluid().getColor(template);
+						}
+						
+						Gui.drawRect(x+4, y, x+barWidth+6, y+12, 0xFF880000);
+						Gui.drawRect(x+5, y+1, x+barWidth+5, y+11, 0xFF222222);
+						if (amt > 0 && tas != null) {
+							Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+							double px = (amt/max)*barWidth;
 							int full = (int)(px/16);
-							int col = template.getFluid().getColor(template);
 							GlStateManager.color(1, 1, 1);
 							for (int j = 0; j < full; j++) {
-								drawTexturedRect(x+5+(j*16), y+1, tas, 16, 10, col, false);
+								drawTexturedRect(x+5+(j*16), y+1, tas, 16, 10, color, false);
 							}
-							drawTexturedRect(x+5+(full*16), y+1, tas, px-(full*16), 10, col, false);
+							drawTexturedRect(x+5+(full*16), y+1, tas, px-(full*16), 10, color, false);
 						}
-						Gui.drawRect(x+5+(w/4), y, x+(w/4)+6, y+5, 0xFF880000);
-						Gui.drawRect(x+5+(w/2), y, x+(w/2)+6, y+9, 0xFF880000);
-						Gui.drawRect(x+5+((w/4)*3), y, x+((w/4)*3)+6, y+5, 0xFF880000);
+						Gui.drawRect(x+5+(barWidth/4), y, x+(barWidth/4)+6, y+5, 0xFF880000);
+						Gui.drawRect(x+5+(barWidth/2), y, x+(barWidth/2)+6, y+9, 0xFF880000);
+						Gui.drawRect(x+5+((barWidth/4)*3), y, x+((barWidth/4)*3)+6, y+5, 0xFF880000);
 						y += 16;
 					}
 					lastTickFluidProperties = props.clone();
@@ -797,6 +836,36 @@ public class ClientProxy extends Proxy {
 						lastTickFluidProperties[i] = new FluidTankProperties(lastTickFluidProperties[i].getContents(), lastTickFluidProperties[i].getCapacity());
 					}
 					GlStateManager.popMatrix();
+				} else {
+					lastTickFluidProperties = null;
+				}
+				
+				if (chest.hasCapability(CapabilityEnergy.ENERGY, null)) {
+					GlStateManager.pushMatrix();
+					GlStateManager.translate(interp*(-x), 0, 0);
+					IEnergyStorage ies = chest.getCapability(CapabilityEnergy.ENERGY, null);
+					int energy = ies.getEnergyStored();
+					
+					float amt = energy;
+					if (lastTickEnergy != -1) {
+						amt = lastTickEnergy + ((lastTickEnergy - energy) * e.getPartialTicks());
+					}
+					float max = ItemMetalElectricElytra.FU_CAPACITY;
+					
+					Gui.drawRect(x+4, y, x+barWidth+6, y+12, 0xFF444444);
+					Minecraft.getMinecraft().getTextureManager().bindTexture(ENERGY);
+					GlStateManager.color(1, 1, 1);
+					Rendering.drawTexturedRect(x+5, y+1, 0, 0, barWidth, 10, 60, 20);
+					if (amt > 0) {
+						float px = (amt/max)*barWidth;
+						Rendering.drawTexturedRect(x+5, y+1, 0, 10, px, 10, 60, 20);
+					}
+					
+					y += 16;
+					lastTickEnergy = energy;
+					GlStateManager.popMatrix();
+				} else {
+					lastTickEnergy = -1;
 				}
 				
 				GlStateManager.pushMatrix();

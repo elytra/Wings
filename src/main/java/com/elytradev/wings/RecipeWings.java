@@ -89,5 +89,10 @@ public class RecipeWings extends ShapedOreRecipe {
 		}
 		return out;
 	}
+	
+	@Override
+	public boolean isDynamic() {
+		return true;
+	}
 
 }

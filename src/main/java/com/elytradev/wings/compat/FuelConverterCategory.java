@@ -54,11 +54,11 @@ public class FuelConverterCategory implements IRecipeCategory<FuelConverterRecip
 		IGuiFluidStackGroup fluid = recipeLayout.getFluidStacks();
 		IGuiItemStackGroup item = recipeLayout.getItemStacks();
 		if (recipeWrapper.isFluid()) {
-			fluid.init(0, true, 1, 1, 16, 60, 16000, false, null);
+			fluid.init(0, true, 1, 1, 16, 60, 4000, false, null);
 		} else {
 			item.init(0, true, 26, 23);
 		}
-		fluid.init(1, false, 145, 1, 16, 60, 16000, false, null);
+		fluid.init(1, false, 145, 1, 16, 60, 4000, false, null);
 		
 		fluid.set(ingredients);
 		item.set(ingredients);

@@ -66,6 +66,10 @@ public abstract class ItemWings extends ItemArmor {
 	public boolean hasThruster() {
 		return false;
 	}
+	
+	public boolean hasAfterburner() {
+		return false;
+	}
 
 	/**
 	 * Burn N units of fuel. The input amount does not need to directly map to

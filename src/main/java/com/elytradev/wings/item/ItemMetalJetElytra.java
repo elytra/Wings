@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.elytradev.wings.Wings;
 
+import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -97,6 +98,11 @@ public class ItemMetalJetElytra extends ItemWings {
 	}
 	
 	@Override
+	public boolean hasAfterburner() {
+		return true;
+	}
+	
+	@Override
 	public int getRGBDurabilityForDisplay(ItemStack stack) {
 		return 0xEEFF00;
 	}
@@ -114,6 +120,10 @@ public class ItemMetalJetElytra extends ItemWings {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+		tooltip.add(I18n.format("hint.jet"));
+		tooltip.add(I18n.format("hint.unbreakable"));
+		tooltip.add(I18n.format("hint.afterburner"));
+		tooltip.add(I18n.format("hint.jetfuel"));
 		tooltip.add(getFluidContents(stack).getFluidAmount()+"/"+FUEL_CAPACITY+" mB");
 	}
 	
