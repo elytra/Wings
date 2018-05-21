@@ -7,11 +7,11 @@ ext {
 	useElytraVersionFormat = true
 	version = '1'
 
-	concreteVersion = '0.3.6-SNAPSHOT'
+	concreteVersion = '0.4.34'
 	concreteModules = [ 'common', 'network', 'reflect' ]
 
-	coremod = null
-	miniVersion = null
+	coremod = 'com.elytradev.wings.asm.FMLPlugin'
+	miniVersion = '0.2-SNAPSHOT'
 
 	language = 'java'
 

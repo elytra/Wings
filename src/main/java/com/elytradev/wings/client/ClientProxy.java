@@ -1,6 +1,7 @@
 package com.elytradev.wings.client;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.ListIterator;
@@ -22,9 +23,7 @@ import com.elytradev.wings.Wings;
 import com.elytradev.wings.WingsPlayer.FlightState;
 import com.elytradev.wings.client.key.KeyBindingAdvanced;
 import com.elytradev.wings.client.key.KeyBindingAdvancedWheel;
-import com.elytradev.wings.client.key.KeyEntryAdvanced;
 import com.elytradev.wings.client.render.LayerWings;
-import com.elytradev.wings.client.render.WingsRenderPlayer;
 import com.elytradev.wings.client.render.WingsTileEntityItemStackRenderer;
 import com.elytradev.wings.client.sound.AfterburnerSound;
 import com.elytradev.wings.client.sound.AfterburnerStartSound;
@@ -84,6 +83,7 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.client.settings.IKeyConflictContext;
 import net.minecraftforge.client.settings.KeyConflictContext;
+import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.IEnergyStorage;
@@ -93,6 +93,7 @@ import net.minecraftforge.fluids.capability.FluidTankProperties;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
@@ -109,8 +110,8 @@ public class ClientProxy extends Proxy {
 	private KeyBinding keyToggleThruster;
 	private KeyBinding keyAfterburner;
 	
-	private KeyBinding keyThrottleUp;
-	private KeyBinding keyThrottleDown;
+	private KeyBindingAdvancedWheel keyThrottleUp;
+	private KeyBindingAdvancedWheel keyThrottleDown;
 	
 	private KeyBinding keyBrake;
 	
@@ -149,7 +150,7 @@ public class ClientProxy extends Proxy {
 		Map<String, RenderPlayer> renders = skinMap.get(manager);
 		for (Map.Entry<String, RenderPlayer> en : renders.entrySet()) {
 			en.getValue().addLayer(new LayerWings(en.getValue()));
-			en.setValue(new WingsRenderPlayer(en.getValue()));
+			//en.setValue(new WingsRenderPlayer(en.getValue()));
 		}
 		
 		TileEntityItemStackRenderer.instance = new WingsTileEntityItemStackRenderer(TileEntityItemStackRenderer.instance);
@@ -180,8 +181,8 @@ public class ClientProxy extends Proxy {
 		ClientRegistry.registerKeyBinding(keyToggleThruster = new KeyBindingAdvanced("key.wings.toggleThruster", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LCONTROL, catF));
 		ClientRegistry.registerKeyBinding(keyAfterburner = new KeyBindingAdvanced("key.wings.afterburner", ADVANCED_FLIGHT_KCC, Keyboard.KEY_SPACE, catF));
 		
-		ClientRegistry.registerKeyBinding(keyThrottleUp = new KeyBindingAdvancedWheel("key.wings.throttleUp", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF, true));
-		ClientRegistry.registerKeyBinding(keyThrottleDown = new KeyBindingAdvancedWheel("key.wings.throttleDown", ADVANCED_FLIGHT_KCC, Keyboard.KEY_NONE, catF, false));
+		ClientRegistry.registerKeyBinding(keyThrottleUp = new KeyBindingAdvancedWheel("key.wings.throttleUp", ADVANCED_FLIGHT_KCC, KeyBindingAdvancedWheel.WHEEL_UP, catF));
+		ClientRegistry.registerKeyBinding(keyThrottleDown = new KeyBindingAdvancedWheel("key.wings.throttleDown", ADVANCED_FLIGHT_KCC, KeyBindingAdvancedWheel.WHEEL_DOWN, catF));
 		
 		ClientRegistry.registerKeyBinding(keyBrake = new KeyBindingAdvanced("key.wings.brake", ADVANCED_FLIGHT_KCC, Keyboard.KEY_LSHIFT, catFM));
 		
@@ -231,7 +232,7 @@ public class ClientProxy extends Proxy {
 					KeyEntry ke = (KeyEntry)arr[i];
 					KeyBinding kb = keybinding.get(ke);
 					if (kb instanceof KeyBindingAdvanced) {
-						arr[i] = new KeyEntryAdvanced(gkbl, (KeyBindingAdvanced)kb);
+						//arr[i] = new KeyEntryAdvanced(gkbl, (KeyBindingAdvanced)kb);
 					}
 				}
 			}
@@ -330,6 +331,10 @@ public class ClientProxy extends Proxy {
 					
 					new SetRotationAndSpeedMessage(wp).sendToServer();
 				}
+			} else if (mc.currentScreen instanceof GuiControls) {
+				// to add scroll wheel support
+				processKeyboard();
+				processMouse();
 			}
 		} else if (e.phase == Phase.END) {
 			Minecraft mc = Minecraft.getMinecraft();
@@ -414,7 +419,6 @@ public class ClientProxy extends Proxy {
 								if (wp.thruster < 0) {
 									wp.thruster = 0;
 								}
-								oldThrusterValue = 0;
 							}
 							
 							if (wheelUp || keyThrottleDown.isKeyDown()) {
@@ -422,7 +426,6 @@ public class ClientProxy extends Proxy {
 								if (wp.thruster > 1) {
 									wp.thruster = 1;
 								}
-								oldThrusterValue = 0;
 							}
 							
 							wp.afterburner = keyAfterburner.isKeyDown() && wings.hasAfterburner();
@@ -448,9 +451,12 @@ public class ClientProxy extends Proxy {
 							wheelDown = false;
 							
 							if (keyToggleThruster.isPressed()) {
-								float newOld = wp.thruster;
-								wp.thruster = oldThrusterValue;
-								oldThrusterValue = newOld;
+								if (wp.thruster > 0) {
+									oldThrusterValue = wp.thruster;
+									wp.thruster = 0;
+								} else {
+									wp.thruster = oldThrusterValue;
+								}
 							}
 							
 							if (wp.thruster != wp.lastTickThruster ||
@@ -512,23 +518,47 @@ public class ClientProxy extends Proxy {
 		}
 	}
 	
+	private static final  Accessor<Integer> event_dwheel = Accessors.findField(Mouse.class, "event_dwheel");
+	private static Object opengl_globalLock;
+	
 	private void processMouse() {
 		Minecraft mc = Minecraft.getMinecraft();
 		while (Mouse.next()) {
 			if (mc.currentScreen != null) {
 				try {
+					if (mc.currentScreen instanceof GuiControls) {
+						GuiControls gc = (GuiControls)mc.currentScreen;
+						int dw = Mouse.getEventDWheel();
+						if (dw != 0 && gc.buttonId != null) {
+							if (gc.buttonId instanceof KeyBindingAdvancedWheel) {
+								int val = dw > 0 ? KeyBindingAdvancedWheel.WHEEL_UP : KeyBindingAdvancedWheel.WHEEL_DOWN;
+								gc.buttonId.setKeyModifierAndCode(KeyModifier.getActiveModifier(), val);
+								mc.gameSettings.setOptionKeyBinding(gc.buttonId, val);
+								gc.buttonId = null;
+								KeyBinding.resetKeyBindingArrayAndHash();
+							}
+							if (opengl_globalLock == null) {
+								Field f = Class.forName("org.lwjgl.opengl.GlobalLock").getDeclaredField("lock");
+								f.setAccessible(true);
+								opengl_globalLock = f.get(null);
+							}
+							synchronized (opengl_globalLock) {
+								event_dwheel.set(null, 0);
+							}
+						}
+					}
 					mc.currentScreen.handleMouseInput();
-				} catch (IOException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 				continue;
 			}
 			int dwheel = Mouse.getEventDWheel();
 			if (dwheel != 0) {
-				if (dwheel > 0 && keyThrottleUp.getKeyCode() == Keyboard.KEY_NONE) {
+				if (keyThrottleUp.doesMatchWheel(dwheel)) {
 					wheelUp = true;
 				}
-				if (dwheel < 0 && keyThrottleDown.getKeyCode() == Keyboard.KEY_NONE) {
+				if (keyThrottleDown.doesMatchWheel(dwheel)) {
 					wheelDown = true;
 				}
 			}
@@ -720,13 +750,14 @@ public class ClientProxy extends Proxy {
 		}
 	}
 	
-	@SubscribeEvent
+	@SubscribeEvent(receiveCanceled=true,priority=EventPriority.HIGHEST)
 	public void onPreRenderGameOverlay(RenderGameOverlayEvent.Pre e) {
 		if (advancedFlightTicks > 0) {
 			float partial = e.getPartialTicks();
 			if (lastFlightState != FlightState.FLYING_ADVANCED) {
 				partial *= -1;
 			}
+			GlStateManager.pushMatrix();
 			float interp = MathHelper.sin((Math.min(advancedFlightTicks+partial, 10)/20f)*((float)Math.PI));
 			if (e.getType() == ElementType.CROSSHAIRS) {
 				e.setCanceled(true);
@@ -753,19 +784,15 @@ public class ClientProxy extends Proxy {
 				if (advancedFlightTicks > 10) {
 					e.setCanceled(true);
 				} else {
-					GlStateManager.pushMatrix();
 					GlStateManager.translate(0, interp*23, 0);
 				}
 			} else if (e.getType() == ElementType.ARMOR || e.getType() == ElementType.EXPERIENCE || e.getType() == ElementType.FOOD || e.getType() == ElementType.HEALTH || e.getType() == ElementType.AIR) {
-				GlStateManager.pushMatrix();
 				GlStateManager.translate(0, interp*23, 0);
-			} else {
-				GlStateManager.pushMatrix();
 			}
 		}
 	}
 	
-	@SubscribeEvent
+	@SubscribeEvent(receiveCanceled=true,priority=EventPriority.LOWEST)
 	public void onPostRenderGameOverlay(RenderGameOverlayEvent.Post e) {
 		if (advancedFlightTicks > 0) {
 			GlStateManager.popMatrix();
